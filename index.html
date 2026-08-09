@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sanoj - A Release-Year Music Trivia Game</title>
+<meta property="og:title" content="Sanoj - A Release-Year Music Trivia Game">
+<meta property="og:description" content="Drag songs onto the year you think they came out. Five decades, titles hidden, coins as your only lives.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vghpe.github.io/sanoj-game/">
+<meta property="og:image" content="https://vghpe.github.io/sanoj-game/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="908">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sanoj - A Release-Year Music Trivia Game">
+<meta name="twitter:description" content="Drag songs onto the year you think they came out. Five decades, titles hidden, coins as your only lives.">
+<meta name="twitter:image" content="https://vghpe.github.io/sanoj-game/og-image.png">
+<style>
+  body{
+    margin:0;
+    padding: 24px 10px 40px;
+    font-family: Tahoma, "MS Sans Serif", Arial, sans-serif;
+    color:#000000;
+    background:#d4d0c8;
+  }
+  table{ border-collapse: collapse; }
+  td, th{ vertical-align: top; }
+  * { border-radius: 0 !important; box-shadow: none !important; }
+
+  .content{
+    margin: 0 auto;
+    width: 900px;
+    max-width: 100%;
+    background: #ffffff;
+    border: 2px solid #808080;
+  }
+
+  .title-bar{
+    background:#000080;
+    padding: 8px 12px;
+    color:#ffffff;
+    font-weight:bold;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+  }
+
+  .sub-bar{
+    background:#e8e8e8;
+    border-bottom: 1px solid #b0b0b0;
+    padding: 6px 12px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .sub-bar .span-text{ font-weight:bold; color:#333333; }
+  .sub-bar-actions{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .status-line{
+    padding: 4px 12px;
+    font-size: 11px;
+    color:#555555;
+    background:#fff8dc;
+    border-bottom: 1px solid #e0d9b0;
+  }
+  .status-line.error{ color:#8a1f11; background:#fde8e6; border-bottom-color:#e6b3ac; }
+  .status-line:empty{ display:none; }
+  .counter{
+    background:#ffffff;
+    border: 1px solid #808080;
+    padding: 3px 10px;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 13px;
+    color:#000080;
+    letter-spacing: 1px;
+  }
+
+  .cols{ width:100%; }
+  .cols td{ width:50%; padding: 10px; }
+
+  .panel{
+    border: 1px solid #b0b0b0;
+    background:#ffffff;
+  }
+  .panel-head{
+    padding: 6px 10px;
+    font-weight:bold;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    color:#000000;
+    background:#e8e8e8;
+    border-bottom: 1px solid #b0b0b0;
+  }
+  .panel-head .hint{
+    font-weight: normal;
+    font-size: 10px;
+    color:#777777;
+    float:right;
+  }
+
+  .scroll-area{
+    max-height: 520px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .year-row{
+    display:flex;
+    align-items: stretch;
+    border: 1px solid #d8d8d8;
+    margin-bottom: 3px;
+  }
+  .year-row.alt{ background:#f5f5f5; }
+  .year-num-cell{
+    width: 56px;
+    flex: 0 0 56px;
+    background:#eeeeee;
+    color:#000000;
+    font-weight:bold;
+    font-size: 14px;
+    text-align:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-right: 1px solid #d8d8d8;
+  }
+  .year-drop-cell{
+    flex: 1;
+    padding: 5px 8px;
+    display:flex;
+    align-items:center;
+    min-width: 0;
+  }
+  .year-drop-cell.empty{
+    font-size: 11px;
+    color:#999999;
+    font-style: italic;
+  }
+  .year-row.drag-over{
+    background:#cfe3ff !important;
+    border-color:#7fa8d9;
+  }
+
+  .year-row.filled .year-num-cell{ background:#dbe6f5; color:#000080; }
+  /* Vivid green is the exact year; the paler green is one year out, which still
+     scores. They have to read as the same family, one clearly stronger. */
+  .year-row.correct{ background:#bfe6b0 !important; border-color:#4f9c3a; }
+  .year-row.correct .year-num-cell{ background:#9ed389; color:#14520a; }
+  .year-row.near{ background:#e4f5dc !important; border-color:#a5cf94; }
+  .year-row.near .year-num-cell{ background:#cbe9bd; color:#3f6b33; }
+  .year-row.incorrect{ background:#fbe6e3 !important; border-color:#dba59c; }
+
+  /* Where a misplaced track belonged, shown once the run is over. */
+  .year-row.answer-row{ background:#f4f4f4 !important; border-color:#c0c0c0; }
+  .answer-mark{
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    font-style: italic;
+    color:#777777;
+    cursor: help;
+  }
+
+  /* The run so far: one chip per decade, newest first. */
+  .run-track{ display:flex; gap: 3px; }
+  .run-step{
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    padding: 3px 6px;
+    border: 1px solid #b0b0b0;
+    background:#ffffff;
+    color:#999999;
+  }
+  .run-step.done{ background:#9ed389; border-color:#4f9c3a; color:#14520a; }
+  .run-step.now{ background:#000080; border-color:#000060; color:#ffffff; }
+
+  /* End-of-batch panel. It covers the board rather than replacing it, so the
+     revealed answers stay readable behind the result. */
+  .board{ position: relative; }
+  .overlay{
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.82);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 5;
+  }
+  /* An explicit display beats the hidden attribute, which otherwise leaves the
+     panel invisible but still washing the board out behind it. */
+  .overlay[hidden]{ display:none; }
+  .overlay-card{
+    background:#ffffff;
+    border: 2px solid #000080;
+    border-top: 8px solid #000080;
+    padding: 18px 24px 20px;
+    max-width: 420px;
+    text-align:center;
+  }
+  .overlay-title{
+    font-size: 16px;
+    font-weight:bold;
+    color:#000080;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .overlay-body{ font-size: 12px; color:#333333; line-height: 1.5; margin-bottom: 14px; }
+  .overlay-btn{
+    background:#000080;
+    color:#ffffff;
+    border: 1px solid #000060;
+    padding: 6px 18px;
+    font-family: Tahoma, Arial, sans-serif;
+    font-weight:bold;
+    font-size: 12px;
+    cursor:pointer;
+  }
+  .overlay-btn:hover{ background:#0000a8; }
+
+  .how-to{
+    border-bottom: 1px solid #b0b0b0;
+    background:#f7f7f7;
+    padding: 6px 12px 8px;
+    font-size: 11px;
+    color:#333333;
+  }
+  .how-to > summary{
+    cursor: pointer;
+    font-weight:bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color:#000080;
+    list-style: none;
+  }
+  .how-to > summary::-webkit-details-marker{ display:none; }
+  .how-to > summary::before{ content:"\25BC  "; font-size: 9px; }
+  .how-to:not([open]) > summary::before{ content:"\25BA  "; }
+  .how-to ul{ margin: 6px 0 0; padding-left: 18px; }
+  .how-to li{ margin-bottom: 3px; line-height: 1.45; }
+
+  /* Badges a skill card leaves behind on a track. The trailing grid column is
+     `auto`, so a track with no badges gives the width straight back to the note. */
+  .card-badges{
+    display:flex;
+    gap: 4px;
+    align-items:center;
+  }
+  .badge{
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    padding: 2px 5px;
+    border: 1px solid;
+    cursor: help;
+  }
+  .badge.homing{ color:#1a6b0a; background:#c2e8b6; border-color:#7fbf6a; }
+  .badge.swapped{ color:#555555; background:#eeeeee; border-color:#c0c0c0; }
+  .badge.locked-badge{ color:#14520a; background:#9ed389; border-color:#4f9c3a; }
+  .badge.trivia-badge{ color:#5b2a86; background:#e6d9f5; border-color:#b98fe0; }
+  /* Amber, the colour this game already uses for "close, but not it" — a near
+     miss is the one badge that is neither a win nor a spent resource. */
+  .badge.near-miss{ color:#7a4500; background:#ffe9a8; border-color:#cc9900; }
+  /* Blue, not amber: a direction is a different kind of fact from a near miss —
+     it rules out half the timeline rather than pointing at two years. */
+  .badge.direction{ color:#00408a; background:#d6e6fa; border-color:#7fa8d9; }
+  /* Spans every grid column, so it sits on its own row below the rest of the
+     card instead of squeezing into the note/reveal column. No fixed height
+     anywhere in the timeline/crate chain (year-drop-cell, crate-slot, the
+     scroll-area panels) — a card just grows, the panel scrolls a bit more. */
+  .card-trivia{
+    grid-column: 1 / -1;
+    margin-top: 2px;
+    padding-top: 4px;
+    border-top: 1px dotted #d0d0d0;
+    font-size: 11px;
+    font-style: italic;
+    color:#5b2a86;
+    line-height: 1.35;
+  }
+  /* A locked track is not draggable, and the cursor has to say so before the
+     player tries and finds nothing happens. */
+  .card-row.locked-card{ cursor: default; }
+  .card-row.locked-card .grip{ color:#4f9c3a; }
+
+  /* Homing band — a green box drawn around the five years the track sits in.
+     Rows are separate elements with a 3px gap, so the "box" is thick green
+     sides on every row in the band, closed off at the top and bottom rows. */
+  .year-row.homing-band{
+    background:#e7f6e1 !important;
+    border-color:#4f9c3a;
+    border-left: 3px solid #4f9c3a;
+    border-right: 3px solid #4f9c3a;
+  }
+  .year-row.homing-start{ border-top: 3px solid #4f9c3a; }
+  .year-row.homing-end{ border-bottom: 3px solid #4f9c3a; }
+  /* No marker on the first row of the band. Any glyph on one particular year
+     reads as "the answer is here", which is the opposite of what a five-year
+     band means — the green box is the whole message. */
+  .year-row.homing-band .year-num-cell{ background:#c2e8b6; color:#1a6b0a; }
+
+  /* Drop preview — last in the file so it outranks the filled/correct row
+     colours it has to paint over. Amber marks the year the dragged track lands
+     on, and the crate slot the track it displaces moves to. */
+  .year-row.drop-here{
+    background:#fff3c4 !important;
+    border-color:#cc8800;
+    outline: 2px dashed #b36b00;
+    outline-offset: -2px;
+  }
+  .year-row.drop-here .year-num-cell{ background:#ffcc80; color:#7a4500; }
+  .year-row.drop-here .year-drop-cell:not(.empty)::after{
+    content: "LANDS HERE";
+    flex: 0 0 auto;
+    margin-left: 8px;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    padding: 2px 6px;
+    color:#7a4500;
+    background:#ffcc80;
+    border: 1px solid #b36b00;
+  }
+  .crate-slot.bump-into{
+    background:#fff3c4 !important;
+    border: 1px dashed #b36b00;
+  }
+  /* Same chip as the year row's, so the pair reads as one move: the dragged
+     track lands there, the one it displaces moves here. */
+  .crate-slot.bump-into::after{
+    content: "MOVES HERE";
+    flex: 0 0 auto;
+    margin: 0 4px 0 auto;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    padding: 2px 6px;
+    color:#7a4500;
+    background:#ffcc80;
+    border: 1px solid #b36b00;
+  }
+
+  .crate-slot{
+    border: 1px dashed #c0c0c0;
+    padding: 5px 8px;
+    margin-bottom: 3px;
+    display:flex;
+    align-items:center;
+    min-height: 34px;
+  }
+  .crate-slot:nth-child(even){ background:#f5f5f5; }
+  .crate-slot.drag-over{ background:#cfe3ff !important; border-color:#7fa8d9; }
+  .crate-slot.empty{
+    justify-content:center;
+    font-size: 11px;
+    color:#999999;
+    font-style: italic;
+  }
+
+  .card-row{
+    display:grid;
+    /* minmax(0,…) rather than a bare 1fr: the last track has to be able to
+       shrink past the note field's intrinsic width when a skill-card badge
+       shares the row, otherwise the badge is drawn over the top of it. */
+    grid-template-columns: 16px 28px 32px 40px minmax(0, 1fr) auto;
+    align-items:center;
+    gap: 8px;
+    width: 100%;
+    cursor: grab;
+  }
+  .card-row:active{ cursor: grabbing; }
+
+  .grip{
+    font-family: monospace;
+    font-weight:bold;
+    color:#aaaaaa;
+    font-size: 13px;
+    text-align:center;
+  }
+  .idx{
+    background:#eeeeee;
+    color:#555555;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 10px;
+    text-align:center;
+    padding: 3px 0;
+    border: 1px solid #d0d0d0;
+  }
+
+  .play-btn{
+    width: 30px;
+    height: 24px;
+    background:#e8e8e8;
+    border: 1px solid #a0a0a0;
+    font-family: Arial, sans-serif;
+    font-weight:bold;
+    font-size: 11px;
+    cursor:pointer;
+    color:#333333;
+  }
+  .play-btn:hover{ background:#dcdcdc; }
+  .play-btn.is-playing{
+    background:#000080;
+    color:#ffffff;
+    border-color:#000060;
+  }
+  .play-btn:disabled{
+    cursor: default;
+    color:#aaaaaa;
+    background:#eeeeee;
+  }
+
+  .eq{
+    display:flex;
+    align-items:flex-end;
+    gap: 2px;
+    width: 32px;
+    height: 18px;
+  }
+  .eq span{
+    width: 4px;
+    height: 20%;
+    background: #b8c4d9;
+    border: 1px solid #98a6bf;
+    animation: chunk 0.8s steps(4) infinite;
+    animation-play-state: paused;
+  }
+  .eq span:nth-child(1){ animation-duration: .5s; }
+  .eq span:nth-child(2){ animation-duration: .7s; animation-delay:.05s; }
+  .eq span:nth-child(3){ animation-duration: .45s; animation-delay:.1s; }
+  .eq span:nth-child(4){ animation-duration: .75s; animation-delay:.15s; }
+  .eq span:nth-child(5){ animation-duration: .6s; animation-delay:.2s; }
+  .eq.playing span{ background:#000080; border-color:#000060; animation-play-state: running; }
+  @keyframes chunk{
+    0%,100%{ height:20%; }
+    50%{ height:100%; }
+  }
+
+  .note-input{
+    width: 100%;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 12px;
+    background:#ffffff;
+    color:#000000;
+    border: 1px solid #a0a0a0;
+    padding: 4px 6px;
+    outline: none;
+    min-width: 0;
+  }
+  .note-input:focus{ border-color:#000080; }
+  .note-input::placeholder{ color:#aaaaaa; font-style: italic; }
+
+  .reveal-text{
+    font-size: 12px;
+    color:#333333;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .year-row.correct .reveal-text{ color:#1a6b0a; font-weight:bold; }
+  .year-row.incorrect .reveal-text{ color:#8a1f11; }
+  .year-row.locked .reveal-text{ color:#14520a; font-weight:bold; cursor: help; }
+
+  .footer{
+    text-align:center;
+    padding: 14px 10px 0;
+    font-size: 11px;
+    color:#888888;
+  }
+
+  .scroll-area::-webkit-scrollbar{ width: 14px; }
+  .scroll-area::-webkit-scrollbar-track{ background:#eeeeee; }
+  .scroll-area::-webkit-scrollbar-thumb{ background:#c0c0c0; border: 1px solid #a0a0a0; }
+
+  /* ---- Skill cards ---- */
+
+  .skill-bar{
+    background:#f0efe9;
+    border-bottom: 1px solid #b0b0b0;
+    padding: 8px 12px;
+  }
+  .skill-bar-head{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight:bold;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .skill-points{
+    background:#ffffff;
+    border: 1px solid #808080;
+    padding: 3px 10px;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 13px;
+    color:#000080;
+    letter-spacing: 1px;
+  }
+  .skill-points.spent{ color:#8a1f11; }
+
+  .skill-deck{
+    display:flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    /* Not stretch: a card with no outcome table has nothing to fill the extra
+       height with, and stretching left it as a box of white space. */
+    align-items: flex-start;
+  }
+  /* Three to a row, fixed: letting the last row's cards grow to fill the width
+     would make the same card a different size depending on the deck's length. */
+  .skill-card{
+    flex: 0 1 calc((100% - 16px) / 3);
+    box-sizing: border-box;
+    min-width: 0;
+    background:#ffffff;
+    border: 1px solid #808080;
+    border-top: 3px solid #000080;
+    padding: 6px 8px 7px;
+    cursor: grab;
+    display:flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .skill-card:active{ cursor: grabbing; }
+  .skill-card:hover{ background:#f4f7fd; }
+  .skill-card-top{
+    display:flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .skill-name{
+    font-size: 12px;
+    font-weight:bold;
+    color:#000080;
+    line-height: 1.2;
+  }
+  .skill-cost{
+    flex: 0 0 auto;
+    background:#000080;
+    color:#ffffff;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 10px;
+    padding: 1px 5px;
+    letter-spacing: 0.5px;
+  }
+  /* One line on what the card is for. The full prose is its title, so the
+     dotted underline is a promise that hovering gives you more. */
+  .skill-desc{
+    font-size: 10px;
+    color:#555555;
+    line-height: 1.35;
+    cursor: help;
+    /* The underline is the promise that hovering gives you the full version. */
+    text-decoration: underline dotted #bbbbbb;
+    text-underline-offset: 3px;
+    text-decoration-skip-ink: none;
+  }
+
+  /* The effects grid: condition, keyword, coin delta. Fixed grammar, so the
+     deck is scanned by column rather than read sentence by sentence. */
+  .skill-fx{
+    display:flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px dotted #d0d0d0;
+  }
+  .fx{
+    display:grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 5px;
+    align-items: baseline;
+    font-size: 10px;
+  }
+  .fx-when{ color:#555555; min-width: 0; }
+  .fx-then{
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    color:#000080;
+    text-align: right;
+  }
+  .fx-coin{
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 10px;
+    text-align: right;
+    min-width: 30px;
+  }
+  .fx-coin.pos{ color:#14520a; }
+  .fx-coin.neg{ color:#8a1f11; }
+  /* A payout of nothing still occupies its cell, so the column stays a column —
+     it just steps back, because nothing is what it is worth. */
+  .fx-coin.zero{ color:#a0a0a0; }
+  /* Caption over the coin column, for a card that pays per track rather than
+     per use. Saying it here costs one line instead of one suffix per row. */
+  .fx-head{ margin-bottom: 1px; }
+  .fx-head .fx-coin{
+    font-family: Tahoma, Arial, sans-serif;
+    font-weight: normal;
+    font-size: 9px;
+    font-style: italic;
+    color:#999999;
+  }
+  .skill-req{
+    font-size: 10px;
+    color:#777777;
+    margin-top: auto;
+    padding-top: 3px;
+    border-top: 1px dotted #d0d0d0;
+  }
+  /* Replaces the whole card body once a skill has left a persistent note
+     (Gut Check's reply). It reads as a result rather than a gate, so it takes
+     the card's own accent colour instead of the requirement line's grey. */
+  .skill-note{
+    display:flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 10px;
+    color:#000080;
+    line-height: 1.35;
+  }
+  /* The verdict leads; the breakdown under it is the supporting detail, so it
+     steps back a shade rather than competing for the same weight. */
+  .skill-note-line:first-child{
+    font-weight:bold;
+    padding-bottom: 3px;
+    border-bottom: 1px dotted #b98fe0;
+    margin-bottom: 1px;
+  }
+  .skill-note-line + .skill-note-line{ color:#5b2a86; }
+
+  .skill-card.locked,
+  .skill-card.unaffordable{
+    background:#eeeeee;
+    border-top-color:#a0a0a0;
+    cursor: not-allowed;
+    opacity: 0.75;
+  }
+  .skill-card.locked:hover,
+  .skill-card.unaffordable:hover{ background:#eeeeee; }
+  .skill-card.locked .skill-name,
+  .skill-card.unaffordable .skill-name{ color:#777777; }
+  .skill-card.locked .skill-cost,
+  .skill-card.unaffordable .skill-cost{ background:#a0a0a0; }
+  .skill-card.locked .skill-req{ color:#8a1f11; font-weight:bold; }
+  .skill-card.unaffordable .skill-cost{ background:#8a1f11; }
+
+  .skill-msg{
+    font-size: 11px;
+    color:#333333;
+    margin-top: 6px;
+    min-height: 14px;
+  }
+  .skill-msg.warn{ color:#8a1f11; font-weight:bold; }
+
+  /* The timeline lights up while a timeline-wide skill is dragged over it.
+     Only the whole column is ever marked this way: a skill that attaches to one
+     track marks the row it is actually over, via .skill-hover below. */
+  .skill-target{ cursor: pointer; }
+  .year-row.skill-hover,
+  .crate-slot.skill-hover{
+    background:#fff3c4 !important;
+    border-color:#b8860b;
+  }
+  .scroll-area.skill-target{
+    outline: 2px dashed #b8860b;
+    outline-offset: -3px;
+    background:#fffdf2;
+  }
+
+  /* Transient highlight from a used skill */
+  .year-row.hl{ animation: pulse 0.9s ease-in-out 3; }
+  .year-row.hl-warn{ background:#ffe0b3 !important; border-color:#cc7a00; }
+  .year-row.hl-warn .year-num-cell{ background:#ffcc80; color:#7a4500; }
+  .year-row.hl-good{ background:#dff2d8 !important; border-color:#7fbf6a; }
+  .year-row.hl-good .year-num-cell{ background:#c2e8b6; color:#1a6b0a; }
+  .year-row.hl-info{ background:#dbe6f5 !important; border-color:#7fa8d9; }
+  .year-row.hl-info .year-num-cell{ background:#c3d6ee; color:#000080; }
+  @keyframes pulse{
+    0%,100%{ outline: 2px solid transparent; outline-offset: -2px; }
+    50%{ outline: 2px solid #000080; outline-offset: -2px; }
+  }
+
+  /* The card fills the drop cell by default; it has to yield when a badge
+     joins it in the row, or the badge lands on top of the scribble field. */
+  .year-drop-cell > .card-row{ flex: 1 1 auto; min-width: 0; }
+
+  .hl-label{
+    flex: 0 0 auto;
+    margin-left: 8px;
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    padding: 2px 6px;
+    border: 1px solid currentColor;
+  }
+  .year-row.hl-warn .hl-label{ color:#7a4500; background:#ffcc80; }
+  .year-row.hl-good .hl-label{ color:#1a6b0a; background:#c2e8b6; }
+  .year-row.hl-info .hl-label{ color:#000080; background:#c3d6ee; }
+
+  .year-row.locked{ border-color:#4f9c3a; }
+  .year-row.locked .year-num-cell{ background:#c2e8b6; color:#1a6b0a; }
+</style>
+</head>
+<body>
+
+<table class="content" cellspacing="0" cellpadding="0" align="center">
+<tr><td>
+
+  <div class="title-bar">Sanoj - A Release-Year Music Trivia Game</div>
+
+  <div class="sub-bar">
+    <span class="span-text" id="spanText"></span>
+    <span class="sub-bar-actions">
+      <span class="run-track" id="runTrack"></span>
+      <span class="counter" id="progressPill">0 / 0 locked</span>
+    </span>
+  </div>
+  <div class="status-line" id="statusLine"></div>
+
+  <details class="how-to" open>
+    <summary>HOW TO PLAY</summary>
+    <ul>
+      <li>Drag the tracks out of the Crate onto the years you think they belong to.</li>
+      <li>The answer is the year the track&rsquo;s <b>album</b> came out &mdash; not the single, not the chart date. Where the two disagree, the album wins.</li>
+      <li>You&rsquo;ll clear 1 decade at a time.</li>      
+      <li><b>Coins are your lives.</b> You start with <span id="howToCoins">7</span>, they carry from decade to decade and never refill and are spent on skill cards to help place tracks. Run out and the run ends there &mdash; how far back you got is the result.</li>
+    </ul>
+  </details>
+
+  <div class="skill-bar">
+    <div class="skill-bar-head">
+      <span>SKILL CARDS <span class="hint" style="font-weight:normal;font-size:10px;color:#777777;">&mdash; drag one onto a target</span></span>
+      <span class="skill-points" id="coinPill">&#128993; 7</span>
+    </div>
+    <div class="skill-deck" id="skillDeck"></div>
+    <div class="skill-msg" id="skillMsg"></div>
+  </div>
+
+  <div class="board">
+    <table class="cols" cellspacing="0" cellpadding="0"><tr>
+      <td>
+        <div class="panel">
+          <div class="panel-head">Timeline <span class="hint" id="timelineHint">one track per year</span></div>
+          <div class="scroll-area" id="timelineArea"></div>
+        </div>
+      </td>
+      <td>
+        <div class="panel">
+          <div class="panel-head">Crate <span class="hint">drag a track out</span></div>
+          <div class="scroll-area" id="crateArea"></div>
+        </div>
+      </td>
+    </tr></table>
+    <div class="overlay" id="overlay" hidden></div>
+  </div>
+
+  <div class="footer">Titles stay hidden &mdash; place tracks by ear. Previews stream live from Apple's iTunes API.</div>
+
+</td></tr>
+</table>
+
+<script src="data.js"></script>
+<script src="gutcheck.js"></script>
+<script src="sweepcheck.js"></script>
+<script>
+  // ===========================================================================
+  //  GAMEPLAY CONFIG — every tunable number in the game lives here.
+  //  Change these and reload; nothing below needs touching.
+  //  (Kept in this file on purpose, unlike the song data — CONFIG is tuning,
+  //  not shared content. The song data (BATCHES) lives in data.js so
+  //  placer-edit.html can share it; deploy.sh now ships both files.)
+  // ===========================================================================
+  const CONFIG = {
+    coinsStart: 7,           // coins at the start of a run; they never refill
+    cheapestSkill: 1,        // when coins drop below this the run is over
+
+    skills: {
+      // cost is what the card charges; reward is paid back only when the card
+      // proves something. Set a cost to 0 for a free card, or reward to 0 to
+      // take the payback away.
+      //
+      // Spot check and Earlier/Later deliberately cost the SAME. Both risk one
+      // coin and both lock the track when it turns out to be spot on; what
+      // differs is the payoff shape. Spot check pays 2 back, so it is what you
+      // reach for when you are confident. Earlier/Later pays only 1 back, but a
+      // wrong answer hands you a direction instead of a bare "not this year",
+      // which is worth more when you have no idea. Price Earlier/Later above
+      // Spot check and it stops being a choice: it would cost more, pay less,
+      // and confirm exactly the same thing.
+      spotcheck: { cost: 1, reward: 2 },   // reward when the year is exact
+      highlow:   { cost: 1, reward: 1 },   // reward when the answer is spot on
+      reveal:    { cost: 2 },
+      worst:     { cost: 3 },
+      swap:      { cost: 2 },
+      // The beacon prices itself by use, like the trivia hint below. At a flat
+      // price it had no good number: 3 or 2 and nobody ever picks it over a
+      // cheap Earlier/Later, 1 and it becomes the automatic opener on every
+      // song you don't know. Starting at 1 and climbing keeps the first beacon
+      // of a decade worth reaching for without making it the whole strategy.
+      homing:    { costStart: 1, costStep: 1, span: 3 },   // span = years the green band covers
+      // costStart/costStep price these two differently: free the first use,
+      // +costStep coins each use after that, reset with every other per-batch
+      // counter at the start of a decade. See skillCost() and skillUses.
+      idreveal:   { costStart: 0, costStep: 1 },
+      yeartrivia: { costStart: 0, costStep: 1 },
+      // gutcheck's cost/thresholds live in gutcheck.js, not here.
+    },
+
+    sampleMs: 20000,         // how much of each preview plays before it stops
+    highlightMs: 4000,       // how long a skill's flash stays on the timeline
+    skillMsgMs: 6000,        // how long the feedback line under the deck stays up
+  };
+
+  const SAMPLE_MS = CONFIG.sampleMs;
+  const COINS_START = CONFIG.coinsStart;
+  const HIGHLIGHT_MS = CONFIG.highlightMs;
+  const HOMING_SPAN = CONFIG.skills.homing.span;
+  const SKILL_MSG_MS = CONFIG.skillMsgMs;
+  const CHEAPEST_SKILL = CONFIG.cheapestSkill;
+
+  // A run is five batches, newest decade first. Each batch is its own round —
+  // its own songs, its own stand-ins, and a timeline showing only its years —
+  // and coins are the only thing that crosses a batch boundary.
+  //
+  // The song data (BATCHES) lives in data.js now, loaded via <script src>
+  // above — see that file for the shape (one song per year, plus a same-year
+  // `backups` stand-in for the Swap skill) and song-list.md for how each
+  // entry was sourced. title/artist stay hidden until a track is locked or
+  // the "Get Track title and performer" hint is used; cards are otherwise
+  // identified purely by ear, per the brief.
+
+  function shuffled(arr){
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Everything a batch owns is rebuilt by startBatch(). Only `coins` and
+  // `batchIndex` survive a batch boundary — those two are the run.
+  let batchIndex = 0;
+  let batch = BATCHES[0];
+  let cards = [];
+  let years = [];
+  let slots = {};
+  let NUM_CARDS = 0;
+  // Card ids proven to sit on their exact year. Confirming a track ends it: it
+  // cannot be dragged, displaced, traded or tested again, which is what makes the
+  // coin rewards worth paying for. Any skill that proves a placement locks it.
+  let confirmed = new Set();
+  // 'playing' | 'cleared' (batch done, waiting to move on) | 'over' | 'won'
+  let runState = 'playing';
+  // Per-use price for the two hint skills: each starts free and climbs by its
+  // own CONFIG costStep with every use of that specific hint. Independent
+  // counters, reset alongside confirmed at the start of every batch.
+  let skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
+
+  let playingCardId = null;
+  let playTimeout = null;
+
+  let coins = COINS_START;
+  let dragging = null;        // { kind: 'card' | 'skill', id } — dragover can't read dataTransfer
+  let highlight = null;       // { years, label, tone } — transient, survives render() via state
+  let highlightTimeout = null;
+  let homingFlash = null;     // { start, end } — the band shown right after attaching a beacon
+  let homingFlashTimeout = null;
+  let skillMsgTimeout = null;
+  let revealAll = false;      // set when a run ends, so the answers are shown
+
+  function cardById(id){ return cards.find(c => c.id === id); }
+  function slotOfCard(cardId){ return Object.keys(slots).find(k => slots[k] === cardId); }
+  function placedCount(){ return years.filter(y => slots['year' + y]).length; }
+  function placedYears(){ return years.filter(y => slots['year' + y]); }
+  function yearOfSlot(slotId){ return parseInt(slotId.slice(4), 10); }
+  function pickOne(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+  function coinWord(n){ return n + ' coin' + (n === 1 ? '' : 's'); }
+
+  // A beacon's band is HOMING_SPAN years wide with a random offset, so it narrows
+  // the answer without handing it over: the true year is never at a fixed spot
+  // inside the band. It clamps to the *batch's* range rather than any wider span,
+  // or the band would point at years the timeline is not showing. Clamping can
+  // only slide the band towards the year it contains, so it always still covers
+  // it — and on a batch narrower than the span it is simply the whole timeline.
+  function homingBandFor(year){
+    const span = Math.min(HOMING_SPAN, years.length);
+    const offset = Math.floor(Math.random() * span);
+    const start = Math.max(batch.start, Math.min(year - offset, batch.end - span + 1));
+    return { start, end: start + span - 1 };
+  }
+
+  // An Earlier/Later verdict is stored as the year it was tested against, not
+  // as a bare "go later" — the same reasoning as a sweep's near miss. Kept that
+  // way it survives the track being dragged elsewhere, and two verdicts on one
+  // track close the answer in from both sides. Testing the same year twice
+  // tells you nothing new, hence the dedupe.
+  function markDirection(card, year, dir){
+    if (!card.directions.some(d => d.year === year)) card.directions.push({ year, dir });
+  }
+
+  // A stand-in has to match the answer year exactly and must not already be in
+  // play, or a swap would either move the answer or hand the player a duplicate.
+  function backupFor(card){
+    return batch.backups.find(b => b.year === card.song.year
+      && !cards.some(c => c.song.trackId === b.trackId));
+  }
+
+  // Trivia is a fact about the *year*, not the specific track sitting on it —
+  // backups don't carry their own trivia string, so a swapped-in card still
+  // has to resolve it through the year it shares with whatever the original
+  // song for that year was. Always found: batch.songs has exactly one entry
+  // per year in the batch's range, backups included.
+  function triviaForYear(year){
+    const song = batch.songs.find(s => s.year === year);
+    return song ? song.trivia : '';
+  }
+
+  function swapCard(card, backup){
+    if (playingCardId === card.id) stopPlaying();
+    card.song = backup;
+    card.swapped = true;
+    card.note = '';           // the note described the track that just left
+    card.ready = false;
+    card.previewUrl = null;
+    card.audio = null;
+    // The title/artist reveal described the track that just left, same
+    // reasoning as the note above — the stand-in is a different song, so its
+    // identity has not actually been seen yet.
+    card.idRevealed = false;
+    // card.homing, triviaRevealed, nearMisses and directions all survive on
+    // purpose: the stand-in shares the answer year, so the beacon band, the
+    // year's trivia, every "one year away from X" and every before/after
+    // verdict the player already paid for still hold — none of them describe
+    // the track, they all describe its year.
+    loadPreviewFor(card);
+  }
+
+  // Each card gates on two levels: available() decides whether the card can be
+  // picked up at all, and target decides which drop surfaces will accept it.
+  // A run() that returns { ok:false } aborts without charging the player.
+  //
+  // Every card prints `short` — one line saying what it is for. Hovering that
+  // line gives the full `description`, so the detail is a deliberate reach
+  // rather than a wall you have to read past.
+  //
+  // `effects` is the outcome table underneath, and only cards whose outcome
+  // BRANCHES get one:
+  //     { when: 'right year', result: 'LOCK', coins: 2, each: false }
+  // renders as   right year        LOCK        +2
+  // `when` is the condition, `result` a keyword in caps, `coins` the payout,
+  // and `each` marks a payout charged per track rather than per use. A card
+  // that always does the same thing has nothing to tabulate, so it leaves
+  // `effects` off and lets `short` do the work — a one-row table would only
+  // repeat the line above it.
+  const SKILLS = [
+    {
+      id: 'worst',
+      name: 'Reveal the worst offender',
+      cost: CONFIG.skills.worst.cost,
+      enabled: false,   // hidden by product decision — logic kept intact for easy re-enabling
+      target: 'timeline',
+      use: 'the timeline',
+      requirement: 'every song placed',
+      description: 'Temporarily highlights the track sitting furthest from its real year. If several are equally far off, one is picked at random.',
+      short: 'Flags the track sitting furthest from its year.',
+      available: () => placedCount() === NUM_CARDS,
+      run(){
+        const entries = placedYears().map(y => ({ y, off: Math.abs(cardById(slots['year' + y]).song.year - y) }));
+        const worst = Math.max(...entries.map(e => e.off));
+        if (worst === 0) return { ok: false, message: 'Every track is already on its exact year — nothing to reveal.' };
+        flash([pickOne(entries.filter(e => e.off === worst)).y], 'FURTHEST OFF', 'warn');
+        return { ok: true };
+      }
+    },
+    {
+      id: 'highlow',
+      name: 'Are you Earlier or Later?',
+      cost: CONFIG.skills.highlow.cost,
+      target: 'song',
+      use: 'a placed song',
+      requirement: 'a song on the timeline',
+      description: 'Tests a placed track and leaves a badge saying whether its real year is before or after the year you tested it on. The badge names that year and stays for the decade, so two of them close in on the answer from both sides. If the track is already spot on it locks instead, and ' + coinWord(CONFIG.skills.highlow.reward) + ' back.',
+      short: 'Says which way a track needs to move.',
+      effects: [
+        { when: 'right year', result: 'LOCK', coins: CONFIG.skills.highlow.reward,
+          hint: 'Already on its exact year: the track locks and the coin comes back.' },
+        { when: 'wrong', result: 'BADGE', coins: 0,
+          hint: 'Leaves a badge on the track — BEFORE or AFTER the year you tested it on — '
+            + 'and it stays for the rest of the decade.' },
+      ],
+      available: () => placedCount() > 0,
+      run(slotId){
+        const y = yearOfSlot(slotId);
+        const cardId = slots[slotId];
+        const card = cardById(cardId);
+        const diff = card.song.year - y;
+        if (diff === 0){
+          confirmed.add(cardId);
+          const paid = CONFIG.skills.highlow.reward;
+          flash([y], 'SPOT ON +' + paid, 'good');
+          return { ok: true, reward: paid,
+            message: 'Spot on — the track is locked, and ' + coinWord(paid) + ' back.' };
+        }
+        // The flash says it now; the badge says it for the rest of the decade.
+        // Recording the year it was tested against is what makes it keep its
+        // meaning after the track is dragged somewhere else.
+        markDirection(card, y, diff > 0 ? 'after' : 'before');
+        flash([y], diff > 0 ? 'LATER ↓' : 'EARLIER ↑', 'info');
+        return { ok: true, message: 'Its real year is ' + (diff > 0 ? 'after ' : 'before ') + y
+          + ' — badged on the track.' };
+      }
+    },
+    {
+      id: 'spotcheck',
+      name: 'Spot check',
+      cost: CONFIG.skills.spotcheck.cost,
+      target: 'song',
+      use: 'a placed song',
+      requirement: 'a song on the timeline',
+      description: 'Tests one placed track against its real year. Exactly right and you get ' + coinWord(CONFIG.skills.spotcheck.reward) + ' back and the track locks for the rest of the decade; wrong and the coin is all it cost you.',
+      short: 'Tests one placed track against its year.',
+      effects: [
+        { when: 'right year', result: 'LOCK', coins: CONFIG.skills.spotcheck.reward,
+          hint: 'Exact year: the track locks for the decade and pays more than it cost.' },
+        { when: 'wrong', result: 'MISS', coins: 0,
+          hint: 'Not this year. You learn that much, and the coin is gone.' },
+      ],
+      available: () => placedCount() > 0,
+      run(slotId){
+        const y = yearOfSlot(slotId);
+        const cardId = slots[slotId];
+        if (cardById(cardId).song.year !== y){
+          flash([y], 'NOT THIS YEAR', 'warn');
+          return { ok: true, message: 'Not this year — the coin is spent, the track stays loose.' };
+        }
+        confirmed.add(cardId);
+        // Not "LOCKED" — the card already says that. The flash is the place to
+        // show the payout, which nothing else on screen reports.
+        const paid = CONFIG.skills.spotcheck.reward;
+        flash([y], '+' + paid + ' COIN' + (paid === 1 ? '' : 'S'), 'good');
+        return { ok: true, reward: paid,
+          message: 'Exact year — the track is locked, and ' + coinWord(paid) + ' back.' };
+      }
+    },
+    {
+      id: 'reveal',
+      name: 'Reveal 1 right placement',
+      cost: CONFIG.skills.reveal.cost,
+      enabled: false,   // hidden by product decision — logic kept intact for easy re-enabling
+      target: 'timeline',
+      use: 'the timeline',
+      requirement: 'every song placed',
+      description: 'Randomly finds one track that is already on the correct year and locks it for the rest of the decade.',
+      short: 'Finds and locks one already-correct placement.',
+      available: () => placedCount() === NUM_CARDS,
+      run(){
+        const correct = placedYears().filter(y => cardById(slots['year' + y]).song.year === y);
+        if (!correct.length) return { ok: false, message: 'Nothing is in the right place yet.' };
+        const fresh = correct.filter(y => !confirmed.has(slots['year' + y]));
+        if (!fresh.length) return { ok: false, message: 'You have already found every correct placement.' };
+        const y = pickOne(fresh);
+        confirmed.add(slots['year' + y]);
+        flash([y], 'CORRECT', 'good');
+        return { ok: true };
+      }
+    },
+    {
+      id: 'homing',
+      name: 'Homing beacon',
+      cost: () => CONFIG.skills.homing.costStart + skillUses.homing * CONFIG.skills.homing.costStep,
+      target: 'card',
+      use: 'any track',
+      requirement: 'a track without a beacon',
+      description: 'Attaches to a track for the rest of the decade and leaves a badge naming a green band ' + HOMING_SPAN + ' years wide on the timeline that the track’s real year sits somewhere inside — shown on attach, and again every time you drag it. Price climbs ' + CONFIG.skills.homing.costStep + ' coin each use, and resets when the decade clears.',
+      short: 'Leaves a badge naming a ' + HOMING_SPAN + '-year band holding the answer.',
+      available: () => cards.some(c => !c.homing),
+      run(slotId){
+        const card = cardById(slots[slotId]);
+        if (card.homing) return { ok: false, message: 'That track already carries a beacon.' };
+        card.homing = homingBandFor(card.song.year);
+        skillUses.homing++;
+        flashHoming(card.homing);
+        return { ok: true };
+      }
+    },
+    {
+      id: 'swap',
+      name: 'Swap the track',
+      cost: CONFIG.skills.swap.cost,
+      target: 'card',
+      use: 'any track',
+      requirement: 'a track not yet swapped',
+      description: 'Trades a track you cannot place for a different one from the same year, so nothing you have already worked out is invalidated. One swap per track, and the scribbled note is cleared with it.',
+      short: 'Trades a track for another from its year.',
+      // Deliberately not gated on stand-in stock. Whether the backup list happens
+      // to hold a track for some year is not something a player can see or reason
+      // about, so it must not decide whether the card can be picked up — run()
+      // turns it away with an explanation and charges nothing.
+      available: () => cards.some(c => !c.swapped),
+      run(slotId){
+        const card = cardById(slots[slotId]);
+        if (card.swapped) return { ok: false, message: 'That track has already been swapped once.' };
+        const backup = backupFor(card);
+        if (!backup) return { ok: false, message: 'No stand-in left for that track’s year.' };
+        swapCard(card, backup);
+        return { ok: true };
+      }
+    },
+    {
+      id: 'idreveal',
+      name: 'Get Track title and performer',
+      cost: () => CONFIG.skills.idreveal.costStart + skillUses.idreveal * CONFIG.skills.idreveal.costStep,
+      enabled: false,   // hidden by product decision — logic kept intact for easy re-enabling
+      target: 'card',
+      use: 'any track',
+      requirement: 'a track not yet named',
+      description: 'Reveals a track’s real title and artist — not its year, and it does not lock. Price climbs ' + CONFIG.skills.idreveal.costStep + ' coin each use, and resets when the decade clears.',
+      short: 'Names the track — not its year.',
+      available: () => cards.some(c => !c.idRevealed),
+      run(slotId){
+        const card = cardById(slots[slotId]);
+        if (card.idRevealed) return { ok: false, message: 'You already know this track’s title and artist.' };
+        card.idRevealed = true;
+        skillUses.idreveal++;
+        return { ok: true, message: 'Revealed: ' + card.song.title + ' — ' + card.song.artist + '.' };
+      }
+    },
+    SWEEP_CHECK_SKILL,   // defined in sweepcheck.js
+    GUT_CHECK_SKILL,     // defined in gutcheck.js
+    {
+      id: 'yeartrivia',
+      name: 'Get trivia from year',
+      cost: () => CONFIG.skills.yeartrivia.costStart + skillUses.yeartrivia * CONFIG.skills.yeartrivia.costStep,
+      target: 'card',
+      use: 'any track',
+      requirement: 'a track with unread trivia',
+      description: 'Reveals a fact about the track’s real year — not the year itself. Price climbs ' + CONFIG.skills.yeartrivia.costStep + ' coin each use, and resets when the decade clears.',
+      short: 'A fact from the year the track came out.',
+      available: () => cards.some(c => !c.triviaRevealed && triviaForYear(c.song.year)),
+      run(slotId){
+        const card = cardById(slots[slotId]);
+        const trivia = triviaForYear(card.song.year);
+        if (!trivia) return { ok: false, message: 'No trivia has been written for this track’s year yet.' };
+        if (card.triviaRevealed) return { ok: false, message: 'You already revealed this track’s trivia.' };
+        card.triviaRevealed = true;
+        skillUses.yeartrivia++;
+        return { ok: true, message: trivia };
+      }
+    }
+  ];
+
+  // Most skills price themselves with a plain number. The two hint skills
+  // price themselves with a function instead, reading a per-batch use
+  // counter — this is the one place that knows how to read either shape.
+  function skillCost(skill){
+    return typeof skill.cost === 'function' ? skill.cost() : skill.cost;
+  }
+
+  // A skill that prices itself with a function is one that climbs with use.
+  // That is worth saying on the card, and an arrow says it in one character.
+  function escalates(skill){ return typeof skill.cost === 'function'; }
+
+  // U+1F7E1, not the coin emoji U+1FA99: at the 10px this sits at, the actual
+  // coin glyph renders as a grey disc that reads as a moon. A yellow circle
+  // reads as gold money at any size, which is the whole job.
+  const COIN = '\u{1F7E1}';
+
+  function costPip(skill, cost){
+    return (cost === 0 ? 'Free' : cost + COIN) + (escalates(skill) ? '↑' : '');
+  }
+
+  function costTitle(skill, cost){
+    return (cost === 0 ? 'Free to use' : 'Costs ' + coinWord(cost))
+      + (escalates(skill) ? ' — climbs with each use, resets when the decade clears' : '');
+  }
+
+  // Renders a skill's `effects` in the card grammar: a condition, a keyword and
+  // a coin delta per row, plus an optional caption over the coin column.
+  function renderEffects(skill){
+    // Every row fills every cell, zero included. A blank cell broke the column
+    // the eye was following, and a row that was blank on the right read as a
+    // divider between the rows above and below rather than a row of its own.
+    const rows = (skill.effects || []).map(fx => {
+      const n = fx.coins || 0;
+      const tag = (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n) + COIN;
+      const tone = n > 0 ? ' pos' : n < 0 ? ' neg' : ' zero';
+      return `<div class="fx"${fx.hint ? ` title="${escapeAttr(fx.hint)}"` : ''}>`
+        + `<span class="fx-when">${escapeAttr(fx.when)}</span>`
+        + `<span class="fx-then">${escapeAttr(fx.result || '')}</span>`
+        + `<span class="fx-coin${tone}">${tag}</span>`
+        + `</div>`;
+    }).join('');
+    // Said once over the column instead of "ea" on every line of it.
+    const head = skill.perUnit
+      ? `<div class="fx fx-head"><span class="fx-when"></span><span class="fx-then"></span>`
+        + `<span class="fx-coin">${escapeAttr(skill.perUnit)}</span></div>`
+      : '';
+    return head + rows;
+  }
+
+  function skillById(id){ return SKILLS.find(s => s.id === id); }
+  function skillState(skill){
+    if (skill.enabled === false) return 'locked';
+    if (runState !== 'playing') return 'locked';
+    if (!skill.available()) return 'locked';
+    if (coins < skillCost(skill)) return 'unaffordable';
+    return 'ready';
+  }
+  function isValidTarget(skill, slotId){
+    // A locked track is finished — nothing that acts on a single track has
+    // anything left to do to it, so it stops being offered as a target.
+    if (skill.target !== 'timeline' && confirmed.has(slots[slotId])) return false;
+    // 'card' skills attach to a track wherever it is sitting, crate included —
+    // a beacon or a swap is most useful before the track is ever placed.
+    if (skill.target === 'card') return !!slots[slotId];
+    if (!slotId.startsWith('year')) return false;
+    if (skill.target === 'timeline') return true;
+    return !!slots[slotId];  // 'song' — must actually hold a placed track
+  }
+
+  function isLocked(slotId){ return confirmed.has(slots[slotId]); }
+
+  function stopPlaying(){
+    if (playingCardId){
+      const c = cardById(playingCardId);
+      c.playing = false;
+      if (c.audio) c.audio.pause();
+    }
+    playingCardId = null;
+    if (playTimeout){ clearTimeout(playTimeout); playTimeout = null; }
+  }
+
+  function togglePlay(cardId){
+    const card = cardById(cardId);
+    if (!card.ready) return;
+
+    if (playingCardId === cardId){
+      stopPlaying();
+      render();
+      return;
+    }
+
+    stopPlaying();
+    if (!card.audio){
+      card.audio = new Audio(card.previewUrl);
+      card.audio.addEventListener('ended', () => { stopPlaying(); render(); });
+    }
+    card.audio.currentTime = 0;
+    card.audio.play().catch(() => { /* blocked until a user gesture; button click satisfies that */ });
+    card.playing = true;
+    playingCardId = cardId;
+    playTimeout = setTimeout(() => { stopPlaying(); render(); }, SAMPLE_MS);
+    render();
+  }
+
+  // The iTunes endpoints' CORS headers are unreliable for plain fetch() from a
+  // browser (Apple's CDN doesn't vary the cached response by Origin), so we
+  // load the response as JSONP via a <script> tag instead — that path isn't
+  // subject to CORS at all, and it's the officially documented way to call
+  // this API cross-origin.
+  function jsonp(url, timeoutMs = 8000){
+    return new Promise((resolve, reject) => {
+      const cbName = '__placerCb' + Math.random().toString(36).slice(2);
+      const script = document.createElement('script');
+      let settled = false;
+
+      const finish = (fn, arg) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        delete window[cbName];
+        script.remove();
+        fn(arg);
+      };
+
+      window[cbName] = data => finish(resolve, data);
+      script.onerror = () => finish(reject, new Error('script load failed'));
+      const timer = setTimeout(() => finish(reject, new Error('timed out')), timeoutMs);
+
+      script.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
+      document.head.appendChild(script);
+    });
+  }
+
+  // One lookup per batch, not per run: only the decade in play needs audio.
+  async function loadBatchPreviews(){
+    const statusEl = document.getElementById('statusLine');
+    statusEl.textContent = 'Loading previews from Apple’s iTunes API…';
+    statusEl.className = 'status-line';
+    try {
+      const ids = batch.songs.map(s => s.trackId).join(',');
+      const data = await jsonp('https://itunes.apple.com/lookup?id=' + ids);
+      data.results.forEach(r => {
+        const card = cards.find(c => c.song.trackId === r.trackId);
+        if (card && r.previewUrl){
+          card.previewUrl = r.previewUrl;
+          card.ready = true;
+        }
+      });
+      const missing = cards.filter(c => !c.ready).length;
+      statusEl.textContent = missing
+        ? missing + ' of ' + NUM_CARDS + ' previews failed to load.'
+        : '';
+      statusEl.className = 'status-line' + (missing ? ' error' : '');
+    } catch (err) {
+      statusEl.textContent = 'Could not reach the iTunes API (' + err.message + '). Check your connection and reload.';
+      statusEl.className = 'status-line error';
+    }
+    render();
+  }
+
+  // A swapped-in track was never part of the batch lookup at load, so it fetches
+  // its own preview.
+  async function loadPreviewFor(card){
+    try {
+      const data = await jsonp('https://itunes.apple.com/lookup?id=' + card.song.trackId);
+      const hit = (data.results || [])[0];
+      if (hit && hit.previewUrl){
+        card.previewUrl = hit.previewUrl;
+        card.ready = true;
+      } else {
+        setSkillMsg('The stand-in track has no preview on iTunes — it cannot be played.', true);
+      }
+    } catch (err) {
+      setSkillMsg('Could not load the stand-in’s preview (' + err.message + ').', true);
+    }
+    render();
+  }
+
+  function updateNote(cardId, value){ cardById(cardId).note = value; }
+  function escapeAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+  // render() rebuilds the whole tree, so a temporary highlight can't just be a
+  // class we slap on an element — it has to live in state that render() reads.
+  function flash(yearList, label, tone){
+    if (highlightTimeout) clearTimeout(highlightTimeout);
+    highlight = { years: yearList, label, tone };
+    highlightTimeout = setTimeout(() => {
+      highlight = null;
+      highlightTimeout = null;
+      render();
+    }, HIGHLIGHT_MS);
+    render();
+    scrollYearIntoView(yearList[0]);
+  }
+
+  // The band is painted straight onto the rows rather than through render(),
+  // because its other trigger is a card dragstart — re-rendering there would
+  // destroy the element the browser is dragging.
+  function paintHomingBand(band){
+    if (!band) return;
+    for (let y = band.start; y <= band.end; y++){
+      const row = document.querySelector('.year-row[data-year="' + y + '"]');
+      if (!row) continue;
+      row.classList.add('homing-band');
+      if (y === band.start) row.classList.add('homing-start');
+      if (y === band.end) row.classList.add('homing-end');
+    }
+  }
+
+  function clearHomingBand(){
+    document.querySelectorAll('.homing-band').forEach(r =>
+      r.classList.remove('homing-band', 'homing-start', 'homing-end'));
+  }
+
+  function flashHoming(band){
+    if (homingFlashTimeout) clearTimeout(homingFlashTimeout);
+    homingFlash = band;                 // render() repaints it; useSkill renders next
+    homingFlashTimeout = setTimeout(() => {
+      homingFlash = null;
+      homingFlashTimeout = null;
+      render();
+    }, HIGHLIGHT_MS);
+    scrollYearIntoView(band.start);
+  }
+
+  // 77 rows in a 520px window means the highlighted row is usually off-screen.
+  // Setting scrollTop keeps it inside the panel; scrollIntoView() would yank the
+  // whole page around too.
+  function scrollYearIntoView(y){
+    const area = document.getElementById('timelineArea');
+    const row = area.querySelector('[data-year="' + y + '"]');
+    if (!row) return;
+    area.scrollTop = row.offsetTop - (area.clientHeight - row.offsetHeight) / 2;
+  }
+
+  // Deliberately not #statusLine — that one belongs to the iTunes loader and its
+  // error state has to survive.
+  // The message is about the thing that just happened, so it expires with it;
+  // left up, a refusal reads as if it still applies several moves later.
+  function setSkillMsg(text, warn){
+    const el = document.getElementById('skillMsg');
+    el.textContent = text;
+    el.className = 'skill-msg' + (warn ? ' warn' : '');
+    if (skillMsgTimeout) clearTimeout(skillMsgTimeout);
+    skillMsgTimeout = null;
+    if (!text) return;
+    skillMsgTimeout = setTimeout(() => {
+      skillMsgTimeout = null;
+      el.textContent = '';
+      el.className = 'skill-msg';
+    }, SKILL_MSG_MS);
+  }
+
+  // Skills are used one way only: drag the card onto its target.
+  function useSkill(skillId, slotId){
+    const skill = skillById(skillId);
+    if (!skill || skillState(skill) !== 'ready') return;
+    if (!isValidTarget(skill, slotId)) return;
+
+    // Snapshot the cost before run() — the skills that price themselves by use
+    // bump their own counter as a side effect of run(), so reading skill.cost
+    // after the fact would charge the price of the *next* use, not this one.
+    const cost = skillCost(skill);
+    const result = skill.run(slotId);
+    if (!result.ok){
+      setSkillMsg(result.message, true);
+      render();
+      return;
+    }
+
+    // Some skills pay out when they prove something. The cost still comes off
+    // first, so the pill reads as a real transaction rather than a discount.
+    coins -= cost;
+    // A reward can be negative — Sweep check charges for every track it finds
+    // adrift. The floor is only cosmetic: settleRun() ends the run at anything
+    // under CHEAPEST_SKILL anyway, and a pill reading "-3 coins" is just noise
+    // on a board the player has already lost.
+    if (result.reward) coins = Math.max(0, coins + result.reward);
+    setSkillMsg(result.message
+      || skill.name + ' — ' + (cost === 0 ? 'free' : coinWord(cost) + ' spent') + '.', false);
+    settleRun();
+    render();
+  }
+
+  // Called after every coin movement. Clearing the batch beats going broke: a
+  // player whose last coin locks the last track has finished the decade, not
+  // failed it.
+  function settleRun(){
+    if (runState !== 'playing') return;
+    if (confirmed.size === NUM_CARDS && NUM_CARDS > 0){
+      runState = batchIndex === BATCHES.length - 1 ? 'won' : 'cleared';
+      stopPlaying();
+      return;
+    }
+    if (coins < CHEAPEST_SKILL){
+      runState = 'over';
+      stopPlaying();
+      // Nothing is confirmed on the way out, so the reveal has to be told to
+      // show everything rather than only the locked tracks.
+      revealAll = true;
+    }
+  }
+
+  function startBatch(index){
+    batchIndex = index;
+    batch = BATCHES[index];
+    runState = 'playing';
+    revealAll = false;
+    NUM_CARDS = batch.songs.length;
+
+    cards = shuffled(batch.songs).map((song, i) => ({
+      id: 'c' + i,
+      song,
+      note: '',
+      playing: false,
+      ready: false,
+      previewUrl: null,
+      audio: null,
+      homing: null,     // { start, end } once a beacon is attached — see homingBandFor()
+      nearMisses: [],   // years a sweep found this track sitting one year away from
+      directions: [],   // { year, dir } — Earlier/Later verdicts, see markDirection()
+      swapped: false,   // a track can only be traded once
+      idRevealed: false,     // true once "Get Track title and performer" has been used on this card
+      triviaRevealed: false  // true once "Get trivia from year" has been used on this card
+    }));
+
+    // Oldest year first, so time runs downwards — "later" means both a later
+    // year and further down the list, which is how the Earlier/Later card reads.
+    years = [];
+    for (let y = batch.start; y <= batch.end; y++) years.push(y);
+
+    slots = {};
+    years.forEach(y => slots['year' + y] = null);
+    cards.forEach((c, i) => slots['crate' + i] = c.id);
+
+    confirmed = new Set();
+    skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
+    resetGutCheck();     // gutcheck.js
+    resetSweepCheck();   // sweepcheck.js
+    stopPlaying();
+    dragging = null;
+    if (highlightTimeout) clearTimeout(highlightTimeout);
+    highlight = null;
+    if (homingFlashTimeout) clearTimeout(homingFlashTimeout);
+    homingFlash = null;
+    setSkillMsg('', false);
+
+    // Clearing a decade on your last coin hands you an unplayable board: no
+    // skill can be bought, so nothing can ever be locked. Settle before the
+    // first render so the run ends here rather than looking like a live batch.
+    settleRun();
+    render();
+    loadBatchPreviews();
+  }
+
+  function renderSkills(){
+    const deck = document.getElementById('skillDeck');
+    deck.innerHTML = '';
+
+    SKILLS.forEach(skill => {
+      if (skill.enabled === false) return;   // hidden — see the skill's own definition
+      const state = skillState(skill);
+      const cost = skillCost(skill);
+      const el = document.createElement('div');
+      el.className = 'skill-card' + (state === 'ready' ? '' : ' ' + state);
+      el.draggable = state === 'ready';
+
+      // A skill can leave a persistent note behind — Gut Check's reply, which
+      // stays on its own card for the rest of the decade. It takes the card's
+      // whole body: the description, the drop instructions and the requirement
+      // line are all moot once the card is spent, and the reply is the only
+      // thing on it still worth reading. note() returns an array of lines.
+      const noteLines = typeof skill.note === 'function' ? (skill.note() || []) : [];
+      const reqText = runState !== 'playing'
+        ? (runState === 'cleared' ? 'Decade cleared' : 'Run is over')
+        : (state === 'unaffordable' ? 'Not enough coins' : 'Needs: ' + skill.requirement);
+
+      // The requirement only earns a line when it is the thing stopping you.
+      // On a card you can actually play, it is restating what you can already
+      // see, which is exactly the noise this layout exists to remove.
+      const reqLine = state === 'ready' ? '' : `<div class="skill-req">${escapeAttr(reqText)}</div>`;
+
+      // Only cards whose outcome branches carry a table; the rest say their
+      // piece in `short` alone and would otherwise print a one-row table that
+      // repeats it.
+      const fxBlock = (skill.effects || []).length
+        ? `<div class="skill-fx">${renderEffects(skill)}</div>` : '';
+
+      const body = noteLines.length
+        ? `<div class="skill-note">${noteLines
+            .map(line => `<div class="skill-note-line">${escapeAttr(line)}</div>`).join('')}</div>`
+        : `<div class="skill-desc" title="${escapeAttr(skill.description)}">${escapeAttr(skill.short)}</div>
+           ${fxBlock}
+           ${reqLine}`;
+
+      el.innerHTML = `
+        <div class="skill-card-top">
+          <span class="skill-name">${escapeAttr(skill.name)}</span>
+          <span class="skill-cost" title="${escapeAttr(costTitle(skill, cost))}">${escapeAttr(costPip(skill, cost))}</span>
+        </div>
+        ${body}
+      `;
+
+      if (state === 'ready'){
+        el.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', 'skill:' + skill.id);
+          e.dataTransfer.effectAllowed = 'copy';
+          dragging = { kind: 'skill', id: skill.id };
+          // Where a card can go is only worth saying once the player is holding
+          // it, so it is said here rather than printed on all six cards.
+          setSkillMsg('Drop ' + skill.name + ' on ' + skill.use + '.', false);
+        });
+        el.addEventListener('dragend', () => { dragging = null; render(); });
+      }
+
+      deck.appendChild(el);
+    });
+
+    const coinEl = document.getElementById('coinPill');
+    coinEl.textContent = COIN + ' ' + coins;
+    coinEl.title = coinWord(coins) + ' left';
+    coinEl.className = 'skill-points' + (coins < COINS_START ? ' spent' : '');
+  }
+
+  function renderCard(cardId, idx){
+    const card = cardById(cardId);
+    const locked = confirmed.has(cardId);
+    const div = document.createElement('div');
+    div.className = 'card-row' + (locked ? ' locked-card' : '');
+    div.draggable = !locked;    // a proven placement stays where it is
+    div.dataset.cardId = cardId;
+
+    div.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', cardId);
+      e.dataTransfer.effectAllowed = 'move';
+      dragging = { kind: 'card', id: cardId };
+      paintHomingBand(card.homing);   // the beacon shows the band while you carry the track
+    });
+    div.addEventListener('dragend', () => {
+      dragging = null;
+      clearDropPreview();
+      clearHomingBand();
+      paintHomingBand(homingFlash);   // an attach flash still running outlives the drag
+    });
+
+    const btnLabel = card.playing ? '||' : (card.ready ? '&#9658;' : '&hellip;');
+    // A locked track is settled, so there is nothing left to protect: it names
+    // itself. A finished run names everything, so the player learns the answers
+    // they never got to. The row is narrow and the text clips, hence the title —
+    // hovering gives the whole line back.
+    const reveal = `${card.song.title} — ${card.song.artist} · ${card.song.year}`;
+    const idText = `${card.song.title} — ${card.song.artist}`;
+    const noteOrReveal = (revealAll || locked)
+      ? `<span class="reveal-text" title="${escapeAttr(reveal)}">${escapeAttr(reveal)}</span>`
+      : card.idRevealed
+        ? `<span class="reveal-text" title="${escapeAttr(idText)}">${escapeAttr(idText)}</span>`
+        : `<input class="note-input" type="text" placeholder="scribble a note..." value="${escapeAttr(card.note)}" />`;
+
+    // The band is on the badge as well as the timeline: the player paid for it,
+    // so making them re-drag the track to read it back would just be a tax.
+    const badges = `
+      ${card.homing ? `<span class="badge homing" title="Homing beacon — the real year is somewhere in ${card.homing.start}–${card.homing.end}">${card.homing.start}&ndash;${card.homing.end}</span>` : ''}
+      ${card.nearMisses.map(y => `<span class="badge near-miss" title="Sweep check: this track's real year is one year away from ${y}">1 OFF ${y}</span>`).join('')}
+      ${card.directions.map(d => `<span class="badge direction" title="Earlier/Later: this track's real year is ${d.dir} ${d.year}">${d.dir === 'after' ? 'AFTER' : 'BEFORE'} ${d.year}</span>`).join('')}
+      ${card.swapped ? '<span class="badge swapped" title="Swapped once — cannot be swapped again">&#8646;</span>' : ''}
+      ${card.triviaRevealed ? '<span class="badge trivia-badge">TRIVIA</span>' : ''}
+      ${locked ? '<span class="badge locked-badge" title="Confirmed on its exact year — locked for the rest of the decade">LOCKED</span>' : ''}
+    `;
+
+    // Sits below the row's inline items rather than only in the badge's tooltip,
+    // so it stays readable without hovering, and stays put — it's persistent for
+    // the rest of the decade, same as the badge that announces it.
+    const triviaBlock = card.triviaRevealed
+      ? `<div class="card-trivia">${escapeAttr(triviaForYear(card.song.year))}</div>`
+      : '';
+
+    div.innerHTML = `
+      <span class="grip">::</span>
+      <span class="idx">${String(idx + 1).padStart(2,'0')}</span>
+      <button class="play-btn ${card.playing ? 'is-playing' : ''}" title="Play sample" ${card.ready ? '' : 'disabled'}>${btnLabel}</button>
+      <span class="eq ${card.playing ? 'playing' : ''}"><span></span><span></span><span></span><span></span><span></span></span>
+      ${noteOrReveal}
+      <span class="card-badges">${badges}</span>
+      ${triviaBlock}
+    `;
+
+    div.querySelector('.play-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      togglePlay(cardId);
+    });
+    if (!revealAll && !locked && !card.idRevealed){  // a named card has no note input to wire up
+      div.querySelector('.note-input').addEventListener('input', e => updateNote(cardId, e.target.value));
+      div.querySelector('.note-input').addEventListener('mousedown', e => e.stopPropagation());
+    }
+
+    return div;
+  }
+
+  // Dropping onto an occupied year does not swap. Swapping sent the displaced
+  // track to wherever the dragged one came from, which is exactly the move a
+  // player cannot follow. Instead it moves sideways into the crate, and the
+  // hover preview marks the slot before the mouse button comes up.
+  let dropPreview = null;   // target slot id — repaint key
+
+  function firstFreeCrateSlot(){
+    for (let i = 0; i < NUM_CARDS; i++) if (!slots['crate' + i]) return 'crate' + i;
+    return null;
+  }
+
+  // Which crate slot the occupant of `slotId` would move to, or null if the year
+  // is empty and nothing gets displaced. A track dragged out of the crate hands
+  // its own slot over, so the displaced one lands where the drag started rather
+  // than somewhere the player has to hunt for.
+  function bumpTargetFor(slotId, draggedId){
+    if (!slots[slotId]) return null;
+    const source = slotOfCard(draggedId);
+    return source && source.startsWith('crate') ? source : firstFreeCrateSlot();
+  }
+
+  function clearDropPreview(){
+    if (!dropPreview) return;
+    dropPreview = null;
+    document.querySelectorAll('.drop-here, .bump-into')
+      .forEach(el => el.classList.remove('drop-here', 'bump-into'));
+  }
+
+  function paintDropPreview(slotId, rowEl, draggedId){
+    if (dropPreview === slotId) return;
+    clearDropPreview();
+    dropPreview = slotId;
+    rowEl.classList.add('drop-here');
+    const bumpTo = bumpTargetFor(slotId, draggedId);
+    if (!bumpTo) return;      // empty year: nothing is displaced, nothing to show
+    const crateEl = document.querySelector('.crate-slot[data-slot="' + bumpTo + '"]');
+    if (crateEl) crateEl.classList.add('bump-into');
+  }
+
+  function dropOnYear(draggedId, sourceSlot, slotId){
+    const displaced = slots[slotId];
+    const bumpTo = bumpTargetFor(slotId, draggedId);   // read before anything moves
+    slots[sourceSlot] = null;
+    slots[slotId] = draggedId;
+    if (displaced) slots[bumpTo] = displaced;
+  }
+
+  // Crate slots hold no meaning beyond storage, so crate-to-crate still swaps.
+  // A track coming off the timeline never displaces one: it takes the first free
+  // slot, which always exists because it just vacated a year.
+  function placeInCrate(draggedId, sourceSlot, slotId){
+    const occupant = slots[slotId];
+    if (occupant && !sourceSlot.startsWith('crate')){
+      slots[sourceSlot] = null;
+      slots[firstFreeCrateSlot()] = draggedId;
+      return;
+    }
+    slots[sourceSlot] = occupant || null;
+    slots[slotId] = draggedId;
+  }
+
+  function attachDropTarget(el, slotId, rowEl){
+    el.addEventListener('dragover', e => {
+      // dataTransfer contents are unreadable during dragover, hence `dragging`.
+      if (dragging && dragging.kind === 'skill'){
+        const skill = skillById(dragging.id);
+        if (!isValidTarget(skill, slotId)) return;
+        e.preventDefault();
+        // A timeline skill hits the whole column, so only the column should
+        // light up — highlighting whatever row you happen to be over would
+        // imply the row is the target.
+        if (skill.target !== 'timeline') rowEl.classList.add('skill-hover');
+        return;
+      }
+      // A locked track cannot be displaced, so its year is not a drop surface at
+      // all — no preventDefault, so the cursor shows the drop being refused.
+      if (isLocked(slotId)) return;
+      e.preventDefault();
+      // Year rows preview where the displaced track goes; crate slots just light up.
+      if (dragging && dragging.kind === 'card' && slotId.startsWith('year')){
+        paintDropPreview(slotId, rowEl, dragging.id);
+      } else {
+        rowEl.classList.add('drag-over');
+      }
+    });
+    // The preview is not cleared here: leaving a row for the card inside it fires
+    // dragleave too, and clearing on that flickers. paintDropPreview() repaints
+    // on every move, and leaving the timeline clears it.
+    el.addEventListener('dragleave', () => rowEl.classList.remove('drag-over', 'skill-hover'));
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();  // rows sit inside the timeline-wide drop target
+      rowEl.classList.remove('drag-over', 'skill-hover');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      dragging = null;      // render() kills the drag source, so dragend may never fire
+      if (!draggedId) return;
+
+      if (draggedId.startsWith('skill:')){
+        useSkill(draggedId.slice(6), slotId);
+        return;
+      }
+
+      const sourceSlot = slotOfCard(draggedId);
+      if (!sourceSlot || sourceSlot === slotId || isLocked(slotId)){ clearDropPreview(); return; }
+      if (slotId.startsWith('crate')) placeInCrate(draggedId, sourceSlot, slotId);
+      else dropOnYear(draggedId, sourceSlot, slotId);
+      clearDropPreview();
+      render();
+    });
+  }
+
+  // "Drag onto the timeline" skills need the row gaps and container padding to
+  // work too, otherwise there are dead strips between every year.
+  function attachTimelineDropTarget(area){
+    const skillFor = () => (dragging && dragging.kind === 'skill') ? skillById(dragging.id) : null;
+    area.addEventListener('dragover', e => {
+      const skill = skillFor();
+      if (!skill || skill.target !== 'timeline') return;
+      e.preventDefault();
+      area.classList.add('skill-target');
+    });
+    area.addEventListener('dragleave', e => {
+      area.classList.remove('skill-target');
+      // Moving onto a row inside the panel fires this too, so only a genuine
+      // exit from the timeline drops the insert preview.
+      if (!area.contains(e.relatedTarget)) clearDropPreview();
+    });
+    area.addEventListener('drop', e => {
+      e.preventDefault();
+      area.classList.remove('skill-target');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      dragging = null;
+      if (!draggedId.startsWith('skill:')) return;
+      const skill = skillById(draggedId.slice(6));
+      if (!skill || skill.target !== 'timeline') return;
+      // Any year slot satisfies a timeline-wide skill; the first one is arbitrary.
+      useSkill(skill.id, 'year' + years[0]);
+    });
+  }
+
+  function render(){
+    const timelineArea = document.getElementById('timelineArea');
+    const crateArea = document.getElementById('crateArea');
+    dropPreview = null;   // the rows carrying the preview classes are about to go
+    timelineArea.innerHTML = '';
+    crateArea.innerHTML = '';
+
+    years.forEach((y, i) => {
+      const slotId = 'year' + y;
+      const cardId = slots[slotId];
+      const row = document.createElement('div');
+      // On a finished run, every year that should have held a track is marked,
+      // so the player can read the answer off the board rather than card by card.
+      const shouldHold = revealAll && cards.find(c => c.song.year === y);
+      const answerHere = shouldHold && slots[slotId] === shouldHold.id;
+      const highlighted = highlight && highlight.years.includes(y);
+      const locked = cardId && confirmed.has(cardId);
+      row.className = 'year-row' + (cardId ? ' filled' : '') + (i % 2 ? ' alt' : '')
+        + (locked || answerHere ? ' locked' : '')
+        + (shouldHold && !answerHere ? ' answer-row' : '')
+        + (highlighted ? ' hl hl-' + highlight.tone : '');
+      row.dataset.year = y;
+
+      const numEl = document.createElement('div');
+      numEl.className = 'year-num-cell';
+      numEl.textContent = y;
+
+      const dropEl = document.createElement('div');
+      dropEl.className = 'year-drop-cell' + (cardId ? '' : ' empty');
+      if (cardId){
+        dropEl.appendChild(renderCard(cardId, parseInt(cardId.slice(1),10)));
+      } else if (!shouldHold){
+        dropEl.textContent = 'drop a track here';   // not on a row about to name its answer
+      }
+      // Where a misplaced track belonged, named on its own row.
+      if (shouldHold && !answerHere){
+        const mark = document.createElement('span');
+        mark.className = 'answer-mark';
+        mark.textContent = shouldHold.song.title + ' — ' + shouldHold.song.artist;
+        mark.title = 'This year belonged to ' + shouldHold.song.title
+          + ' — ' + shouldHold.song.artist;
+        dropEl.appendChild(mark);
+      }
+      // No separate row mark for a locked track: the card carries a LOCKED badge
+      // and the row is already green-bordered. A ✓ next to it was a third way of
+      // saying the same thing, and it crowded the note field out.
+      if (highlighted){
+        const label = document.createElement('span');
+        label.className = 'hl-label';
+        label.textContent = highlight.label;
+        dropEl.appendChild(label);
+      }
+
+      row.appendChild(numEl);
+      row.appendChild(dropEl);
+      attachDropTarget(dropEl, slotId, row);
+      timelineArea.appendChild(row);
+    });
+
+    paintHomingBand(homingFlash);   // survives the rebuild the same way `highlight` does
+
+    for (let i = 0; i < NUM_CARDS; i++){
+      const slotId = 'crate' + i;
+      const cardId = slots[slotId];
+      const slotEl = document.createElement('div');
+      slotEl.className = 'crate-slot' + (cardId ? '' : ' empty');
+      slotEl.dataset.slot = slotId;
+      if (cardId){
+        slotEl.appendChild(renderCard(cardId, i));
+      } else {
+        slotEl.textContent = 'empty';
+      }
+      attachDropTarget(slotEl, slotId, slotEl);
+      crateArea.appendChild(slotEl);
+    }
+
+    document.getElementById('progressPill').textContent =
+      confirmed.size + ' / ' + NUM_CARDS + ' locked';
+    document.getElementById('spanText').innerHTML =
+      escapeAttr(batch.label) + ' &nbsp;&middot;&nbsp; ' + batch.start + '&ndash;' + batch.end
+      + ' &nbsp;&middot;&nbsp; ' + NUM_CARDS + ' tracks';
+    renderRunTrack();
+    renderSkills();
+    renderOverlay();
+  }
+
+  // The five decades as a row of chips, so how far back the run has got is
+  // readable without counting.
+  function renderRunTrack(){
+    const el = document.getElementById('runTrack');
+    el.innerHTML = BATCHES.map((b, i) => {
+      const state = i < batchIndex ? ' done' : i === batchIndex ? ' now' : '';
+      return `<span class="run-step${state}">${escapeAttr(b.label.replace(/^The /, ''))}</span>`;
+    }).join('');
+  }
+
+  // One panel for every end state. It sits over the board rather than replacing
+  // it, so the answers stay visible behind the result.
+  function renderOverlay(){
+    const el = document.getElementById('overlay');
+    if (runState === 'playing'){ el.hidden = true; el.innerHTML = ''; return; }
+    const cleared = runState === 'over' ? batchIndex : batchIndex + 1;
+    // Built per state, not all three up front: the 'cleared' copy names the next
+    // decade, and on the last batch there is no next decade to name.
+    let parts;
+    if (runState === 'cleared'){
+      const next = BATCHES[batchIndex + 1];
+      parts = {
+        title: batch.label + ' cleared',
+        body: 'Every track locked on its exact year. ' + coinWord(coins)
+          + ' in hand for ' + next.label.toLowerCase() + '.',
+        button: 'Play ' + next.label.toLowerCase(),
+      };
+    } else if (runState === 'won'){
+      parts = {
+        title: 'Run complete',
+        body: 'All ' + BATCHES.length + ' decades cleared, back to '
+          + BATCHES[BATCHES.length - 1].start + ', with ' + coinWord(coins) + ' left over.',
+        button: 'Start a new run',
+      };
+    } else {
+      parts = {
+        title: 'Out of coins',
+        body: (cleared
+                ? cleared + ' decade' + (cleared === 1 ? '' : 's') + ' cleared, down to '
+                  + BATCHES[cleared - 1].start + '. '
+                : 'No decades cleared. ')
+          + 'The answers are on the board.',
+        button: 'Start a new run',
+      };
+    }
+
+    el.hidden = false;
+    el.innerHTML = `
+      <div class="overlay-card">
+        <div class="overlay-title">${escapeAttr(parts.title)}</div>
+        <div class="overlay-body">${escapeAttr(parts.body)}</div>
+        <button class="overlay-btn" id="overlayBtn">${escapeAttr(parts.button)}</button>
+      </div>`;
+    document.getElementById('overlayBtn').addEventListener('click', () => {
+      if (runState === 'cleared'){
+        startBatch(batchIndex + 1);
+      } else {
+        coins = COINS_START;
+        startBatch(0);
+      }
+    });
+  }
+
+  // Written from CONFIG rather than typed into the markup, so the rules panel
+  // cannot drift out of step with the number the game actually deals.
+  document.getElementById('howToCoins').textContent = COINS_START;
+
+  attachTimelineDropTarget(document.getElementById('timelineArea'));
+  startBatch(0);
+</script>
+</body>
+</html>
