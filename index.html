@@ -35,12 +35,22 @@
   }
 
   .title-bar{
+    position: relative;
     background:#000080;
     padding: 8px 12px;
     color:#ffffff;
     font-weight:bold;
     font-size: 15px;
     letter-spacing: 0.5px;
+  }
+  .reverse-toggle{
+    position: absolute;
+    top: 0; right: 0;
+    width: 28px; height: 28px;
+    padding: 0; margin: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
   }
 
   .platform-notice{
@@ -743,7 +753,7 @@
 <table class="content" cellspacing="0" cellpadding="0" align="center">
 <tr><td>
 
-  <div class="title-bar">Sanoj - A Release-Year Music Trivia Game</div>
+  <div class="title-bar"><span id="titleText">Sanoj - A Release-Year Music Trivia Game</span><button class="reverse-toggle" id="reverseToggle" title=" " aria-hidden="true" tabindex="-1"></button></div>
 
   <div class="platform-notice">No touch/mobile support yet &mdash; desktop with a mouse only.</div>
 
@@ -1979,6 +1989,26 @@
   // Written from CONFIG rather than typed into the markup, so the rules panel
   // cannot drift out of step with the number the game actually deals.
   document.getElementById('howToCoins').textContent = COINS_START;
+
+  // Hidden dev toggle (top-right corner of the title bar): trades each
+  // year's main track for its stand-in in place. Its own inverse, so
+  // clicking again restores the original pairing.
+  let reversed = false;
+  function swapMainAndBackup(){
+    BATCHES.forEach(b => b.songs.forEach(song => {
+      const standIn = b.backups.find(x => x.year === song.year);
+      const tmp = { title: song.title, artist: song.artist, trackId: song.trackId };
+      song.title = standIn.title; song.artist = standIn.artist; song.trackId = standIn.trackId;
+      standIn.title = tmp.title; standIn.artist = tmp.artist; standIn.trackId = tmp.trackId;
+    }));
+  }
+  document.getElementById('reverseToggle').addEventListener('click', () => {
+    reversed = !reversed;
+    swapMainAndBackup();
+    document.getElementById('titleText').textContent = 'Sanoj' + (reversed ? ' (Reversed)' : '') + ' - A Release-Year Music Trivia Game';
+    coins = COINS_START;
+    startBatch(0);
+  });
 
   attachTimelineDropTarget(document.getElementById('timelineArea'));
   startBatch(0);
