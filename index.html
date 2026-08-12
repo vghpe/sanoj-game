@@ -652,9 +652,9 @@
     padding-top: 3px;
     border-top: 1px dotted #d0d0d0;
   }
-  /* Replaces the whole card body once a skill has left a persistent note
-     (Gut Check's reply). It reads as a result rather than a gate, so it takes
-     the card's own accent colour instead of the requirement line's grey. */
+  /* Replaces the whole card body once a skill has left a persistent note.
+     It reads as a result rather than a gate, so it takes the card's own
+     accent colour instead of the requirement line's grey. */
   .skill-note{
     display:flex;
     flex-direction: column;
@@ -810,7 +810,6 @@
 
 <script src="data.js"></script>
 <script src="gutcheck.js"></script>
-<script src="sweepcheck.js"></script>
 <script>
   // ===========================================================================
   //  GAMEPLAY CONFIG — every tunable number in the game lives here.
@@ -940,7 +939,7 @@
   }
 
   // An Earlier/Later verdict is stored as the year it was tested against, not
-  // as a bare "go later" — the same reasoning as a sweep's near miss. Kept that
+  // as a bare "go later" — the same reasoning as Gut Check's near miss. Kept that
   // way it survives the track being dragged elsewhere, and two verdicts on one
   // track close the answer in from both sides. Testing the same year twice
   // tells you nothing new, hence the dedupe.
@@ -1034,7 +1033,7 @@
       effects: [
         { when: 'right year', result: 'LOCK', coins: CONFIG.skills.highlow.reward,
           hint: 'Already on its exact year: the track locks and the coin comes back.' },
-        { when: 'wrong', result: 'BADGE', coins: 0,
+        { when: 'wrong', result: 'INFO BADGE', coins: 0,
           hint: 'Leaves a badge on the track — BEFORE or AFTER the year you tested it on — '
             + 'and it stays for the rest of the decade.' },
       ],
@@ -1175,7 +1174,6 @@
         return { ok: true, message: 'Revealed: ' + card.song.title + ' — ' + card.song.artist + '.' };
       }
     },
-    SWEEP_CHECK_SKILL,   // defined in sweepcheck.js
     GUT_CHECK_SKILL,     // defined in gutcheck.js
     {
       id: 'yeartrivia',
@@ -1472,7 +1470,7 @@
     // Some skills pay out when they prove something. The cost still comes off
     // first, so the pill reads as a real transaction rather than a discount.
     coins -= cost;
-    // A reward can be negative — Sweep check charges for every track it finds
+    // A reward can be negative — Gut Check charges for every track it finds
     // adrift. The floor is only cosmetic: settleRun() ends the run at anything
     // under CHEAPEST_SKILL anyway, and a pill reading "-3 coins" is just noise
     // on a board the player has already lost.
@@ -1518,7 +1516,7 @@
       previewUrl: null,
       audio: null,
       homing: null,     // { start, end } once a beacon is attached — see homingBandFor()
-      nearMisses: [],   // years a sweep found this track sitting one year away from
+      nearMisses: [],   // years Gut Check found this track sitting one year away from
       directions: [],   // { year, dir } — Earlier/Later verdicts, see markDirection()
       swapped: false,   // a track can only be traded once
       idRevealed: false,     // true once "Get Track title and performer" has been used on this card
@@ -1537,7 +1535,6 @@
     confirmed = new Set();
     skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
     resetGutCheck();     // gutcheck.js
-    resetSweepCheck();   // sweepcheck.js
     stopPlaying();
     dragging = null;
     if (highlightTimeout) clearTimeout(highlightTimeout);
@@ -1661,7 +1658,7 @@
     // so making them re-drag the track to read it back would just be a tax.
     const badges = `
       ${card.homing ? `<span class="badge homing" title="Homing beacon — the real year is somewhere in ${card.homing.start}–${card.homing.end}">${card.homing.start}&ndash;${card.homing.end}</span>` : ''}
-      ${card.nearMisses.map(y => `<span class="badge near-miss" title="Sweep check: this track's real year is one year away from ${y}">1 OFF ${y}</span>`).join('')}
+      ${card.nearMisses.map(y => `<span class="badge near-miss" title="Gut Check: this track's real year is one year away from ${y}">1 OFF ${y}</span>`).join('')}
       ${card.directions.map(d => `<span class="badge direction" title="Earlier/Later: this track's real year is ${d.dir} ${d.year}">${d.dir === 'after' ? 'AFTER' : 'BEFORE'} ${d.year}</span>`).join('')}
       ${card.swapped ? '<span class="badge swapped" title="Swapped once — cannot be swapped again">&#8646;</span>' : ''}
       ${card.triviaRevealed ? '<span class="badge trivia-badge">TRIVIA</span>' : ''}

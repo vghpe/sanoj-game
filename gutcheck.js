@@ -1,124 +1,126 @@
-// gutcheck.js — everything about the "Gut Check" skill lives here: its cost,
-// the vague dialect it answers in, and the skill card itself. Loaded via
-// <script src> before song-year-placer.html's main script (classic <script>
-// tags share one top-level scope, same as data.js/BATCHES), so this file can
-// be edited on its own without hunting through the rest of the game.
+// gutcheck.js — the "Gut Check" skill: one pass over every track you have
+// placed, paying out on the ones that landed and charging for the ones that
+// did not. Loaded via <script src> before song-year-placer.html's main script
+// (classic <script> tags share one top-level scope, same as data.js/BATCHES),
+// so the economy below can be retuned without touching the rest of the game.
 //
-// available()/run() below reference placedCount(), NUM_CARDS, confirmed,
-// placedYears(), cardById() and slots — all declared in the main script.
-// That's safe because those two functions only run later, in response to a
-// player action, by which point everything has loaded.
-
-const GUT_CHECK_COST = 2;
+// available()/run() reference placedCount(), placedYears(), confirmed,
+// cardById(), slots, flash() and coinWord() — all declared in the main script.
+// That's safe because they only run later, in response to a player action.
 
 // ---------------------------------------------------------------------------
-//  The dialect
+//  Economy — every number the check pays or charges. Expect to retune these.
 // ---------------------------------------------------------------------------
-// Gut Check never names a track or a year. It sorts every placement into a
-// distance band and reports how many landed in each, in deliberately woolly
-// words. The mapping is FIXED — the same board always produces the same
-// sentences, with no random phrasing — because the whole point is that a
-// player who uses the card across a few runs can learn the dialect. "Some"
-// has to always mean three or four, or there is nothing to learn.
+// The first check of a decade costs COST_START; every check after that costs
+// COST_STEP more, and the price resets when the decade does. A flat price made
+// the board worth re-checking over and over: each pass rules out three years
+// per track for one coin, where a spot check rules out one for one, so a player
+// with no ear for the music could grind a decade out more cheaply by checking
+// than by guessing. Charging more for each repeat leaves the opening read cheap
+// and makes the grind the expensive way round.
+const GUT_CHECK_COST_START = 2;
+const GUT_CHECK_COST_STEP = 1;
+const GUT_CHECK_EXACT_REWARD = 1;    // per track sitting on its exact year (also locks it)
+const GUT_CHECK_NEAR_REWARD = 0;     // per track within GUT_CHECK_NEAR_YEARS
+const GUT_CHECK_MISS_PENALTY = 1;    // per track further out than that
+const GUT_CHECK_NEAR_YEARS = 1;      // how far still counts as "near", in years
 
-// Distance bands, nearest first. `max` is inclusive, counted in years away
-// from the track's real year, and the last band must stay open-ended so every
-// placement lands somewhere. Retune these and you are changing what the card
-// is willing to call close — note that the bands cover the whole range with no
-// gaps, which is what stops a mediocre board from reading as a good one.
-const GUT_CHECK_BANDS = [
-  { max: 0,        label: 'spot on' },
-  { max: 1,        label: 'a year out' },
-  { max: 4,        label: 'a few years out' },
-  { max: Infinity, label: 'way off' },
-];
+let gutCheckUses = 0;
+function resetGutCheck(){ gutCheckUses = 0; }
+function gutCheckCost(){ return GUT_CHECK_COST_START + gutCheckUses * GUT_CHECK_COST_STEP; }
 
-// Absolute counts, never proportions — "some" means 3–4 whether the decade
-// holds seven tracks or ten. Proportions would make the same word mean
-// different things in different batches, and the dialect would be unlearnable.
-const GUT_CHECK_AMOUNTS = [
-  { max: 1,        word: 'one',      plural: false },
-  { max: 2,        word: 'a couple', plural: true  },
-  { max: 4,        word: 'some',     plural: true  },
-  { max: 6,        word: 'a bunch',  plural: true  },
-  { max: Infinity, word: 'loads',    plural: true  },
-];
+// The main script's coinWord() would be the natural thing to build the
+// description with, but this file is evaluated before it exists — description
+// is a plain string, read at load time — so it needs its own local copy.
+function gutCoinWord(n){ return n + ' coin' + (n === 1 ? '' : 's'); }
 
-// The opening line — one gut reaction to the board as a whole. Keyed on the
-// mean distance rather than any single band, so it can never cheerfully
-// disagree with the breakdown printed underneath it.
-const GUT_CHECK_VERDICTS = [
-  { max: 0,        line: 'Yeah. That’s the lot.' },
-  { max: 0.5,      line: 'This feels right.' },
-  { max: 1,        line: 'Pretty good, I reckon.' },
-  { max: 2,        line: 'Not bad. Not finished.' },
-  { max: 3,        line: 'Alright, I guess.' },
-  { max: 4.5,      line: 'Hmm. Shaky, this.' },
-  { max: 6,        line: 'No. Something’s wrong here.' },
-  { max: Infinity, line: 'This is a mess.' },
-];
-
-let gutCheckUsed = false;
-// The reply from the last use, as an array of lines, kept on the card itself
-// until the decade clears — see the skill's note() below.
-let gutCheckReplyLines = null;
-function resetGutCheck(){ gutCheckUsed = false; gutCheckReplyLines = null; }
-
-function gutCheckBandOf(distance){
-  return GUT_CHECK_BANDS.find(band => distance <= band.max);
+// A near miss is recorded as the year it was *tested against*, not just "close",
+// so the marker stays true after the track is dragged somewhere else — and two
+// markers on one track pin its real year between them. Checking the same track
+// on the same year twice adds nothing new, hence the dedupe.
+function gutCheckMarkNear(card, year){
+  if (!card.nearMisses.includes(year)) card.nearMisses.push(year);
 }
 
-function gutCheckAmount(count, total){
-  // Worth its own phrase: "all of them are way off" is a very different read
-  // from "loads are", and it is the one the player most needs to hear.
-  if (count === total && total > 1) return { word: 'all of them', plural: true };
-  return GUT_CHECK_AMOUNTS.find(amount => count <= amount.max);
-}
-
-function gutCheckVerdict(meanDistance){
-  return GUT_CHECK_VERDICTS.find(verdict => meanDistance <= verdict.max).line;
-}
-
-// Returns the whole reply as lines: the verdict, then one line per band that
-// actually caught something, worst first — a gut reaction leads with the bad
-// news, and that is the half the player is going to act on.
-function gutCheckLines(distances){
-  const total = distances.length;
-  const mean = distances.reduce((sum, d) => sum + d, 0) / total;
-  const lines = [gutCheckVerdict(mean)];
-
-  GUT_CHECK_BANDS.slice().reverse().forEach(band => {
-    const count = distances.filter(d => gutCheckBandOf(d) === band).length;
-    if (!count) return;
-    const amount = gutCheckAmount(count, total);
-    const line = amount.word + (amount.plural ? ' are ' : ' is ') + band.label;
-    lines.push(line.charAt(0).toUpperCase() + line.slice(1) + '.');
-  });
-
-  return lines;
+function gutCheckMessage(exact, near, miss, reward){
+  const parts = [];
+  if (exact) parts.push(exact + ' locked');
+  if (near) parts.push(near + ' a year out');
+  if (miss) parts.push(miss + ' further out');
+  const net = reward > 0 ? coinWord(reward) + ' back'
+    : reward < 0 ? coinWord(-reward) + ' docked'
+    : 'nothing back';
+  return parts.join(', ') + ' — ' + net + '.';
 }
 
 const GUT_CHECK_SKILL = {
   id: 'gutcheck',
   name: 'Gut Check',
-  cost: GUT_CHECK_COST,
-  enabled: false,   // parked while Sweep check is being tried — logic kept intact
+  cost: gutCheckCost,
   target: 'timeline',
   use: 'the timeline',
-  requirement: 'every song placed, nothing locked, unused this decade',
-  short: 'A vague read on the whole board.',
-  description: 'One vague read on the whole board — no years, no names, no idea which track is which. It answers in the same woolly words every time, so the more you use it the better you understand it. Only works before anything is locked in, once per decade.',
-  available: () => !gutCheckUsed && placedCount() === NUM_CARDS && confirmed.size === 0,
-  // Read by renderSkills(), which hands the card's whole body over to these
-  // lines once they exist — the description and the requirement are both moot
-  // on a card that is spent for the rest of the decade.
-  note: () => gutCheckReplyLines,
+  requirement: 'a song on the timeline',
+  short: 'Tests every placed track at once.',
+  // Printed on the card in the shared effects grammar — see SKILLS in
+  // song-year-placer.html for the shape. `each` because a check pays and
+  // charges per track, not per use.
+  // "per track" is the caption over the coin column: a check pays and charges
+  // once for every track it touches, and saying so once beats "ea" on each row.
+  perUnit: 'per track',
+  effects: [
+    { when: 'spot on',    result: 'LOCK', coins: GUT_CHECK_EXACT_REWARD,
+      hint: 'On its exact year: the track locks for the decade and pays out.' },
+    { when: '1 year out', result: 'INFO BADGE', coins: 0,
+      hint: 'Leaves a badge on the track naming the year it was tested against, '
+        + 'so its real year is one either side of that. Costs nothing, pays nothing.' },
+    { when: 'further out', result: 'MISS', coins: -GUT_CHECK_MISS_PENALTY,
+      hint: 'More than a year out. You learn nothing about it and it costs you.' },
+  ],
+  description: 'Tests every track you have placed, all at once. Each one sitting on its exact year locks and pays '
+    + gutCoinWord(GUT_CHECK_EXACT_REWARD) + ' back; each one a single year out is badged with the year it was tested '
+    + 'against and pays nothing; everything further out costs you ' + gutCoinWord(GUT_CHECK_MISS_PENALTY)
+    + '. Price climbs ' + GUT_CHECK_COST_STEP + ' coin each check, and resets when the decade clears.',
+  available: () => placedCount() > 0,
   run(){
-    gutCheckUsed = true;
-    const distances = placedYears().map(y => Math.abs(cardById(slots['year' + y]).song.year - y));
-    gutCheckReplyLines = gutCheckLines(distances);
-    // The feedback line under the deck only has room for one line, and the
-    // card itself now carries the full read.
-    return { ok: true, message: gutCheckReplyLines[0] };
+    let exact = 0, near = 0, miss = 0;
+    const lockedYears = [];
+
+    placedYears().forEach(y => {
+      const cardId = slots['year' + y];
+      // A locked track is settled and pays nothing a second time — without
+      // this, re-checking a board of locked tracks would mint coins forever.
+      if (confirmed.has(cardId)) return;
+
+      const card = cardById(cardId);
+      const off = Math.abs(card.song.year - y);
+      if (off === 0){
+        confirmed.add(cardId);
+        lockedYears.push(y);
+        exact++;
+      } else if (off <= GUT_CHECK_NEAR_YEARS){
+        gutCheckMarkNear(card, y);
+        near++;
+      } else {
+        miss++;
+      }
+    });
+
+    // Nothing loose on the board — charging for a check that cannot report
+    // anything would just be a tax, so it is turned away free of charge.
+    if (!exact && !near && !miss){
+      return { ok: false, message: 'Every placed track is already locked — nothing left to check.' };
+    }
+
+    // Only a check that actually ran counts towards the price of the next one.
+    // useSkill() reads the cost before calling run(), so this bumps the price
+    // for the following check rather than the one being paid for now.
+    gutCheckUses++;
+
+    const reward = exact * GUT_CHECK_EXACT_REWARD
+      + near * GUT_CHECK_NEAR_REWARD
+      - miss * GUT_CHECK_MISS_PENALTY;
+
+    if (lockedYears.length) flash(lockedYears, 'SPOT ON', 'good');
+    return { ok: true, reward, message: gutCheckMessage(exact, near, miss, reward) };
   }
 };
