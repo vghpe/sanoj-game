@@ -537,18 +537,26 @@
   }
   .skill-points.spent{ color:#8a1f11; }
 
+  /* Three explicit column containers — which card goes in which is a fixed,
+     hand-picked grouping (SKILL_COLUMNS in the script), not an automatic
+     pack. Tried auto-packing first (CSS grid dense auto-placement, then a
+     greedy shortest-column algorithm); both moved cards around in ways that
+     didn't hold together thematically or visually as the deck changed. A
+     flex column's items keep their natural content height on their own, so
+     there's no row-track math to get wrong here either way. */
   .skill-deck{
     display:flex;
-    flex-wrap: wrap;
     gap: 8px;
-    /* Not stretch: a card with no outcome table has nothing to fill the extra
-       height with, and stretching left it as a box of white space. */
     align-items: flex-start;
   }
-  /* Three to a row, fixed: letting the last row's cards grow to fill the width
-     would make the same card a different size depending on the deck's length. */
+  .skill-deck-col{
+    flex: 1 1 0;
+    min-width: 0;
+    display:flex;
+    flex-direction: column;
+    gap: 8px;
+  }
   .skill-card{
-    flex: 0 1 calc((100% - 16px) / 3);
     box-sizing: border-box;
     min-width: 0;
     background:#ffffff;
@@ -573,6 +581,17 @@
     font-weight:bold;
     color:#000080;
     line-height: 1.2;
+  }
+  .skill-card-top-right{
+    display:flex;
+    align-items:center;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+  .skill-single-use,
+  .skill-escalates{
+    display:flex;
+    color:#000080;
   }
   .skill-cost{
     flex: 0 0 auto;
@@ -683,7 +702,11 @@
   .skill-card.locked:hover,
   .skill-card.unaffordable:hover{ background:#eeeeee; }
   .skill-card.locked .skill-name,
-  .skill-card.unaffordable .skill-name{ color:#777777; }
+  .skill-card.unaffordable .skill-name,
+  .skill-card.locked .skill-single-use,
+  .skill-card.unaffordable .skill-single-use,
+  .skill-card.locked .skill-escalates,
+  .skill-card.unaffordable .skill-escalates{ color:#777777; }
   .skill-card.locked .skill-cost,
   .skill-card.unaffordable .skill-cost{ background:#a0a0a0; }
   .skill-card.locked .skill-req{ color:#8a1f11; font-weight:bold; }
@@ -839,7 +862,10 @@
       highlow:   { cost: 1, reward: 1 },   // reward when the answer is spot on
       reveal:    { cost: 2 },
       worst:     { cost: 3 },
-      swap:      { cost: 1 },
+      // Swap is free — it is no longer a coin sink, it is its own resource: a
+      // flat pool of charges handed out fresh each decade (see `swapsLeft`),
+      // spent one at a time regardless of coin balance.
+      swap:      { charges: 3 },
       // The beacon prices itself by use, like the trivia hint below. At a flat
       // price it had no good number: 3 or 2 and nobody ever picks it over a
       // cheap Earlier/Later, 1 and it becomes the automatic opener on every
@@ -904,6 +930,9 @@
   // own CONFIG costStep with every use of that specific hint. Independent
   // counters, reset alongside confirmed at the start of every batch.
   let skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
+  // Swap's own resource: a flat pool of charges, spent one at a time and
+  // reset alongside skillUses at the start of every batch — see startBatch().
+  let swapsLeft = CONFIG.skills.swap.charges;
 
   let playingCardId = null;
   let playTimeout = null;
@@ -1135,23 +1164,26 @@
     {
       id: 'swap',
       name: 'Swap the track',
-      cost: CONFIG.skills.swap.cost,
+      cost: 0,
+      singleUse: true,   // read by buildSkillCardEl() to show the single-use icon
       target: 'card',
       use: 'any track',
       requirement: 'a track not yet swapped',
-      description: 'Trades a track you cannot place for a different one from the same year, so nothing you have already worked out is invalidated. One swap per track, and the scribbled note is cleared with it.',
+      description: 'Trades a track you cannot place for a different one from the same year, so nothing you have already worked out is invalidated. One swap per track, and the scribbled note is cleared with it. Free, and each of the '
+        + CONFIG.skills.swap.charges + ' copies dealt out at the start of the decade is good for one swap.',
       short: 'Trades a track for another from its year.',
       // Deliberately not gated on stand-in stock. Whether the backup list happens
       // to hold a track for some year is not something a player can see or reason
       // about, so it must not decide whether the card can be picked up — run()
-      // turns it away with an explanation and charges nothing.
-      available: () => cards.some(c => !c.swapped),
+      // turns it away with an explanation and spends no charge.
+      available: () => swapsLeft > 0 && cards.some(c => !c.swapped),
       run(slotId){
         const card = cardById(slots[slotId]);
         if (card.swapped) return { ok: false, message: 'That track has already been swapped once.' };
         const backup = backupFor(card);
         if (!backup) return { ok: false, message: 'No stand-in left for that track’s year.' };
         swapCard(card, backup);
+        swapsLeft--;
         return { ok: true };
       }
     },
@@ -1197,6 +1229,17 @@
     }
   ];
 
+  // Which column of the skill deck each card renders in, top to bottom
+  // within a column — a deliberate grouping rather than an automatic packing:
+  // the two "test what's on the timeline" cards on the left, the three
+  // per-track hints in the middle, Swap's three copies on their own on the
+  // right. A disabled skill or an id with no entry here just doesn't render.
+  const SKILL_COLUMNS = [
+    ['spotcheck', 'gutcheck'],
+    ['homing', 'yeartrivia', 'highlow'],
+    ['swap'],
+  ];
+
   // Most skills price themselves with a plain number. The two hint skills
   // price themselves with a function instead, reading a per-batch use
   // counter — this is the one place that knows how to read either shape.
@@ -1205,7 +1248,6 @@
   }
 
   // A skill that prices itself with a function is one that climbs with use.
-  // That is worth saying on the card, and an arrow says it in one character.
   function escalates(skill){ return typeof skill.cost === 'function'; }
 
   // U+1F7E1, not the coin emoji U+1FA99: at the 10px this sits at, the actual
@@ -1214,13 +1256,28 @@
   const COIN = '\u{1F7E1}';
 
   function costPip(skill, cost){
-    return (cost === 0 ? 'Free' : cost + COIN) + (escalates(skill) ? '↑' : '');
+    return cost === 0 ? 'Free' : cost + COIN;
   }
 
   function costTitle(skill, cost){
-    return (cost === 0 ? 'Free to use' : 'Costs ' + coinWord(cost))
-      + (escalates(skill) ? ' — climbs with each use, resets when the decade clears' : '');
+    return cost === 0 ? 'Free to use' : 'Costs ' + coinWord(cost);
   }
+
+  // A single ring with one filled pip, same idea as a die's "1" face — drawn
+  // as inline SVG rather than spent as a Unicode character (tried U+2680 DIE
+  // FACE-1 first; it fell back to a missing-glyph box on this font stack).
+  // `currentColor` picks up whatever text color the card state already set,
+  // so it doesn't need its own ready/locked styling.
+  const SINGLE_USE_ICON = '<svg class="skill-single-use-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
+    + '<rect x="0.5" y="0.5" width="8" height="8" fill="none" stroke="currentColor"/>'
+    + '<circle cx="4.5" cy="4.5" r="1.4" fill="currentColor"/></svg>';
+
+  // A solid arrow, same reasoning as SINGLE_USE_ICON above — this replaced a
+  // plain "↑" character appended straight into the cost pill, which all but
+  // disappeared at 10px against the pill's own bold digits. A filled shape
+  // reads at a glance where a single thin character didn't.
+  const ESCALATES_ICON = '<svg class="skill-escalates-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
+    + '<polygon points="4.5,0.8 8,4.6 5.6,4.6 5.6,8.2 3.4,8.2 3.4,4.6 1,4.6" fill="currentColor"/></svg>';
 
   // Renders a skill's `effects` in the card grammar: a condition, a keyword and
   // a coin delta per row, plus an optional caption over the coin column.
@@ -1534,6 +1591,7 @@
 
     confirmed = new Set();
     skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
+    swapsLeft = CONFIG.skills.swap.charges;
     resetGutCheck();     // gutcheck.js
     stopPlaying();
     dragging = null;
@@ -1551,67 +1609,115 @@
     loadBatchPreviews();
   }
 
+  // Builds one card's DOM element from a skill-shaped object, unattached to
+  // any parent — split out of renderSkills() so a skill that renders as more
+  // than one physical card (Swap) can call it once per copy.
+  function buildSkillCardEl(skill){
+    const state = skillState(skill);
+    const cost = skillCost(skill);
+    const el = document.createElement('div');
+    el.className = 'skill-card' + (state === 'ready' ? '' : ' ' + state);
+    el.draggable = state === 'ready';
+
+    // A skill can leave a persistent note behind — Gut Check's reply, which
+    // stays on its own card for the rest of the decade. It takes the card's
+    // whole body: the description, the drop instructions and the requirement
+    // line are all moot once the card is spent, and the reply is the only
+    // thing on it still worth reading. note() returns an array of lines.
+    const noteLines = typeof skill.note === 'function' ? (skill.note() || []) : [];
+    const reqText = runState !== 'playing'
+      ? (runState === 'cleared' ? 'Decade cleared' : 'Run is over')
+      : (state === 'unaffordable' ? 'Not enough coins' : 'Needs: ' + skill.requirement);
+
+    // The requirement only earns a line when it is the thing stopping you.
+    // On a card you can actually play, it is restating what you can already
+    // see, which is exactly the noise this layout exists to remove.
+    const reqLine = state === 'ready' ? '' : `<div class="skill-req">${escapeAttr(reqText)}</div>`;
+
+    // Only cards whose outcome branches carry a table; the rest say their
+    // piece in `short` alone and would otherwise print a one-row table that
+    // repeats it.
+    const fxBlock = (skill.effects || []).length
+      ? `<div class="skill-fx">${renderEffects(skill)}</div>` : '';
+
+    const body = noteLines.length
+      ? `<div class="skill-note">${noteLines
+          .map(line => `<div class="skill-note-line">${escapeAttr(line)}</div>`).join('')}</div>`
+      : `<div class="skill-desc" title="${escapeAttr(skill.description)}">${escapeAttr(skill.short)}</div>
+         ${fxBlock}
+         ${reqLine}`;
+
+    const singleUseIcon = skill.singleUse
+      ? `<span class="skill-single-use" title="Single use — this copy is spent once it works">${SINGLE_USE_ICON}</span>`
+      : '';
+    const escalatesIcon = escalates(skill)
+      ? `<span class="skill-escalates" title="Climbs with each use — resets when the decade clears">${ESCALATES_ICON}</span>`
+      : '';
+
+    el.innerHTML = `
+      <div class="skill-card-top">
+        <span class="skill-name">${escapeAttr(skill.name)}</span>
+        <span class="skill-card-top-right">
+          ${escalatesIcon}
+          ${singleUseIcon}
+          <span class="skill-cost" title="${escapeAttr(costTitle(skill, cost))}">${escapeAttr(costPip(skill, cost))}</span>
+        </span>
+      </div>
+      ${body}
+    `;
+
+    if (state === 'ready'){
+      el.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', 'skill:' + skill.id);
+        e.dataTransfer.effectAllowed = 'copy';
+        dragging = { kind: 'skill', id: skill.id };
+        // Where a card can go is only worth saying once the player is holding
+        // it, so it is said here rather than printed on all six cards.
+        setSkillMsg('Drop ' + skill.name + ' on ' + skill.use + '.', false);
+      });
+      el.addEventListener('dragend', () => { dragging = null; render(); });
+    }
+
+    return el;
+  }
+
   function renderSkills(){
     const deck = document.getElementById('skillDeck');
     deck.innerHTML = '';
 
-    SKILLS.forEach(skill => {
-      if (skill.enabled === false) return;   // hidden — see the skill's own definition
-      const state = skillState(skill);
-      const cost = skillCost(skill);
-      const el = document.createElement('div');
-      el.className = 'skill-card' + (state === 'ready' ? '' : ' ' + state);
-      el.draggable = state === 'ready';
+    const cols = SKILL_COLUMNS.map(() => {
+      const col = document.createElement('div');
+      col.className = 'skill-deck-col';
+      deck.appendChild(col);
+      return col;
+    });
 
-      // A skill can leave a persistent note behind — Gut Check's reply, which
-      // stays on its own card for the rest of the decade. It takes the card's
-      // whole body: the description, the drop instructions and the requirement
-      // line are all moot once the card is spent, and the reply is the only
-      // thing on it still worth reading. note() returns an array of lines.
-      const noteLines = typeof skill.note === 'function' ? (skill.note() || []) : [];
-      const reqText = runState !== 'playing'
-        ? (runState === 'cleared' ? 'Decade cleared' : 'Run is over')
-        : (state === 'unaffordable' ? 'Not enough coins' : 'Needs: ' + skill.requirement);
+    SKILL_COLUMNS.forEach((ids, colIndex) => {
+      ids.forEach(id => {
+        const skill = skillById(id);
+        if (!skill || skill.enabled === false) return;   // hidden — see the skill's own definition
 
-      // The requirement only earns a line when it is the thing stopping you.
-      // On a card you can actually play, it is restating what you can already
-      // see, which is exactly the noise this layout exists to remove.
-      const reqLine = state === 'ready' ? '' : `<div class="skill-req">${escapeAttr(reqText)}</div>`;
+        // Swap no longer renders as one card with a use-counter: it deals out
+        // CONFIG.skills.swap.charges identical copies at the start of the
+        // decade, each good for exactly one swap. swapsLeft still tracks how
+        // many are left as a single number (run() below decrements it); which
+        // physical copy that corresponds to doesn't matter since they're
+        // interchangeable, so the last `charges - swapsLeft` copies are
+        // simply the ones shown spent — and shown last, so a copy you can
+        // still use never sits below one you can't.
+        if (id === 'swap'){
+          for (let i = 0; i < CONFIG.skills.swap.charges; i++){
+            const spent = i >= swapsLeft;
+            const instance = spent
+              ? { ...skill, available: () => false, note: () => ['Used this decade.'] }
+              : { ...skill, available: () => cards.some(c => !c.swapped) };
+            cols[colIndex].appendChild(buildSkillCardEl(instance));
+          }
+          return;
+        }
 
-      // Only cards whose outcome branches carry a table; the rest say their
-      // piece in `short` alone and would otherwise print a one-row table that
-      // repeats it.
-      const fxBlock = (skill.effects || []).length
-        ? `<div class="skill-fx">${renderEffects(skill)}</div>` : '';
-
-      const body = noteLines.length
-        ? `<div class="skill-note">${noteLines
-            .map(line => `<div class="skill-note-line">${escapeAttr(line)}</div>`).join('')}</div>`
-        : `<div class="skill-desc" title="${escapeAttr(skill.description)}">${escapeAttr(skill.short)}</div>
-           ${fxBlock}
-           ${reqLine}`;
-
-      el.innerHTML = `
-        <div class="skill-card-top">
-          <span class="skill-name">${escapeAttr(skill.name)}</span>
-          <span class="skill-cost" title="${escapeAttr(costTitle(skill, cost))}">${escapeAttr(costPip(skill, cost))}</span>
-        </div>
-        ${body}
-      `;
-
-      if (state === 'ready'){
-        el.addEventListener('dragstart', e => {
-          e.dataTransfer.setData('text/plain', 'skill:' + skill.id);
-          e.dataTransfer.effectAllowed = 'copy';
-          dragging = { kind: 'skill', id: skill.id };
-          // Where a card can go is only worth saying once the player is holding
-          // it, so it is said here rather than printed on all six cards.
-          setSkillMsg('Drop ' + skill.name + ' on ' + skill.use + '.', false);
-        });
-        el.addEventListener('dragend', () => { dragging = null; render(); });
-      }
-
-      deck.appendChild(el);
+        cols[colIndex].appendChild(buildSkillCardEl(skill));
+      });
     });
 
     const coinEl = document.getElementById('coinPill');
