@@ -267,6 +267,15 @@
   .how-to:not([open]) > summary::before{ content:"\25BA  "; }
   .how-to ul{ margin: 6px 0 0; padding-left: 18px; }
   .how-to li{ margin-bottom: 3px; line-height: 1.45; }
+  /* Same typeface/weight/color as the LOCK result on a skill card's effects
+     table (.fx-then) — a player who has already learned that word from the
+     cards recognizes it here instead of parsing new sentences. */
+  .how-to .kw{
+    font-family: "Courier New", monospace;
+    font-weight:bold;
+    letter-spacing: 0.5px;
+    color:#000080;
+  }
 
   /* Badges a skill card leaves behind on a track. The trailing grid column is
      `auto`, so a track with no badges gives the width straight back to the note. */
@@ -792,10 +801,10 @@
   <details class="how-to" open>
     <summary>HOW TO PLAY</summary>
     <ul>
-      <li>Drag the tracks out of the Crate onto the years you think they belong to.</li>
-      <li>The answer is the year the track&rsquo;s <b>album</b> came out &mdash; not the single, not the chart date. Where the two disagree, the album wins.</li>
-      <li>You&rsquo;ll clear 1 decade at a time.</li>      
-      <li><b>Coins are your lives.</b> You start with <span id="howToCoins">7</span>, they carry from decade to decade and never refill and are spent on skill cards to help place tracks. Run out and the run ends there &mdash; how far back you got is the result.</li>
+      <li><b>Drag</b> each track onto the year you think it&rsquo;s from.</li>
+      <li><b>Placing isn&rsquo;t enough.</b> Only a skill card can <span class="kw">LOCK</span> a track &mdash; and only locked tracks clear the decade.</li>
+      <li>Answer = the track&rsquo;s <b>album</b> year, never the single or the chart date.</li>
+      <li><b>Coins are your lives.</b> Start with <b><span id="howToCoins">7</span>&#x1F7E1;</b>, spent on skill cards &mdash; hit zero and the run ends there.</li>
     </ul>
   </details>
 
