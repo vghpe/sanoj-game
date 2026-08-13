@@ -204,9 +204,11 @@
   .run-step.done{ background:#9ed389; border-color:#4f9c3a; color:#14520a; }
   .run-step.now{ background:#000080; border-color:#000060; color:#ffffff; }
 
-  /* End-of-batch panel. It covers the board rather than replacing it, so the
-     revealed answers stay readable behind the result. */
   .board{ position: relative; }
+  /* End-of-batch panel. It covers the crate column only, not the timeline
+     next to it, so the just-cleared (or revealed, on a loss) tracks stay
+     visible behind the result instead of being washed out along with it. */
+  .crate-col{ position: relative; }
   .overlay{
     position: absolute;
     inset: 0;
@@ -297,7 +299,7 @@
   .badge.homing{ color:#1a6b0a; background:#c2e8b6; border-color:#7fbf6a; }
   .badge.swapped{ color:#555555; background:#eeeeee; border-color:#c0c0c0; }
   .badge.locked-badge{ color:#14520a; background:#9ed389; border-color:#4f9c3a; }
-  .badge.trivia-badge{ color:#5b2a86; background:#e6d9f5; border-color:#b98fe0; }
+  .badge.trivia-badge{ color:#5b2a86; background:#e6d9f5; border-color:#b98fe0; font-style: normal; margin-right: 6px; }
   /* Amber, the colour this game already uses for "close, but not it" — a near
      miss is the one badge that is neither a win nor a spent resource. */
   .badge.near-miss{ color:#7a4500; background:#ffe9a8; border-color:#cc9900; }
@@ -406,7 +408,7 @@
     /* minmax(0,…) rather than a bare 1fr: the last track has to be able to
        shrink past the note field's intrinsic width when a skill-card badge
        shares the row, otherwise the badge is drawn over the top of it. */
-    grid-template-columns: 16px 28px 32px 40px minmax(0, 1fr) auto;
+    grid-template-columns: 16px 32px 40px minmax(0, 1fr) auto;
     align-items:center;
     gap: 8px;
     width: 100%;
@@ -421,17 +423,6 @@
     font-size: 13px;
     text-align:center;
   }
-  .idx{
-    background:#eeeeee;
-    color:#555555;
-    font-family: "Courier New", monospace;
-    font-weight:bold;
-    font-size: 10px;
-    text-align:center;
-    padding: 3px 0;
-    border: 1px solid #d0d0d0;
-  }
-
   .play-btn{
     width: 30px;
     height: 24px;
@@ -826,13 +817,15 @@
         </div>
       </td>
       <td>
-        <div class="panel">
-          <div class="panel-head">Crate <span class="hint">drag a track out</span></div>
-          <div class="scroll-area" id="crateArea"></div>
+        <div class="crate-col">
+          <div class="panel">
+            <div class="panel-head">Crate <span class="hint">drag a track out</span></div>
+            <div class="scroll-area" id="crateArea"></div>
+          </div>
+          <div class="overlay" id="overlay" hidden></div>
         </div>
       </td>
     </tr></table>
-    <div class="overlay" id="overlay" hidden></div>
   </div>
 
   <div class="footer">Titles stay hidden &mdash; place tracks by ear. Previews stream live from Apple's iTunes API.</div>
@@ -1288,6 +1281,14 @@
   const ESCALATES_ICON = '<svg class="skill-escalates-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
     + '<polygon points="4.5,0.8 8,4.6 5.6,4.6 5.6,8.2 3.4,8.2 3.4,4.6 1,4.6" fill="currentColor"/></svg>';
 
+  // Replaces a locked track's whole badge row (see renderCard) — once a track
+  // is locked, which band/direction/near-miss it collected no longer matters,
+  // and clearing them back to one small icon gives the note field room to
+  // show the track's full name instead of clipping it.
+  const LOCKED_ICON = '<svg class="locked-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
+    + '<path d="M2.5 4V2.7a2 2 0 0 1 4 0V4" fill="none" stroke="currentColor" stroke-width="1"/>'
+    + '<rect x="1.3" y="4" width="6.4" height="4.2" fill="currentColor"/></svg>';
+
   // Renders a skill's `effects` in the card grammar: a condition, a keyword and
   // a coin delta per row, plus an optional caption over the coin column.
   function renderEffects(skill){
@@ -1735,7 +1736,7 @@
     coinEl.className = 'skill-points' + (coins < COINS_START ? ' spent' : '');
   }
 
-  function renderCard(cardId, idx){
+  function renderCard(cardId){
     const card = cardById(cardId);
     const locked = confirmed.has(cardId);
     const div = document.createElement('div');
@@ -1771,25 +1772,29 @@
 
     // The band is on the badge as well as the timeline: the player paid for it,
     // so making them re-drag the track to read it back would just be a tax.
-    const badges = `
+    // A locked track is settled — none of that is worth reading any more, so
+    // it collapses to one small icon and gives the row's width back to the name.
+    const badges = locked
+      ? `<span class="badge locked-badge" title="Confirmed on its exact year — locked for the rest of the decade">${LOCKED_ICON}</span>`
+      : `
       ${card.homing ? `<span class="badge homing" title="Homing beacon — the real year is somewhere in ${card.homing.start}–${card.homing.end}">${card.homing.start}&ndash;${card.homing.end}</span>` : ''}
       ${card.nearMisses.map(y => `<span class="badge near-miss" title="Gut Check: this track's real year is one year away from ${y}">1 OFF ${y}</span>`).join('')}
       ${card.directions.map(d => `<span class="badge direction" title="Earlier/Later: this track's real year is ${d.dir} ${d.year}">${d.dir === 'after' ? 'AFTER' : 'BEFORE'} ${d.year}</span>`).join('')}
       ${card.swapped ? '<span class="badge swapped" title="Swapped once — cannot be swapped again">&#8646;</span>' : ''}
-      ${card.triviaRevealed ? '<span class="badge trivia-badge">TRIVIA</span>' : ''}
-      ${locked ? '<span class="badge locked-badge" title="Confirmed on its exact year — locked for the rest of the decade">LOCKED</span>' : ''}
     `;
 
-    // Sits below the row's inline items rather than only in the badge's tooltip,
+    // Sits below the row's inline items rather than only in a badge's tooltip,
     // so it stays readable without hovering, and stays put — it's persistent for
-    // the rest of the decade, same as the badge that announces it.
+    // the rest of the decade. The TRIVIA tag lives here rather than in the badge
+    // row above so it reads as a label on the fact, not one more badge competing
+    // for room next to the track's name — and it survives the row collapsing to
+    // the locked icon, since the fact is still true once the track is locked.
     const triviaBlock = card.triviaRevealed
-      ? `<div class="card-trivia">${escapeAttr(triviaForYear(card.song.year))}</div>`
+      ? `<div class="card-trivia"><span class="badge trivia-badge">TRIVIA</span>${escapeAttr(triviaForYear(card.song.year))}</div>`
       : '';
 
     div.innerHTML = `
       <span class="grip">::</span>
-      <span class="idx">${String(idx + 1).padStart(2,'0')}</span>
       <button class="play-btn ${card.playing ? 'is-playing' : ''}" title="Play sample" ${card.ready ? '' : 'disabled'}>${btnLabel}</button>
       <span class="eq ${card.playing ? 'playing' : ''}"><span></span><span></span><span></span><span></span><span></span></span>
       ${noteOrReveal}
@@ -1979,7 +1984,7 @@
       const dropEl = document.createElement('div');
       dropEl.className = 'year-drop-cell' + (cardId ? '' : ' empty');
       if (cardId){
-        dropEl.appendChild(renderCard(cardId, parseInt(cardId.slice(1),10)));
+        dropEl.appendChild(renderCard(cardId));
       } else if (!shouldHold){
         dropEl.textContent = 'drop a track here';   // not on a row about to name its answer
       }
@@ -2017,7 +2022,7 @@
       slotEl.className = 'crate-slot' + (cardId ? '' : ' empty');
       slotEl.dataset.slot = slotId;
       if (cardId){
-        slotEl.appendChild(renderCard(cardId, i));
+        slotEl.appendChild(renderCard(cardId));
       } else {
         slotEl.textContent = 'empty';
       }
