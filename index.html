@@ -204,9 +204,11 @@
   .run-step.done{ background:#9ed389; border-color:#4f9c3a; color:#14520a; }
   .run-step.now{ background:#000080; border-color:#000060; color:#ffffff; }
 
-  /* End-of-batch panel. It covers the board rather than replacing it, so the
-     revealed answers stay readable behind the result. */
   .board{ position: relative; }
+  /* End-of-batch panel. It covers the crate column only, not the timeline
+     next to it, so the just-cleared (or revealed, on a loss) tracks stay
+     visible behind the result instead of being washed out along with it. */
+  .crate-col{ position: relative; }
   .overlay{
     position: absolute;
     inset: 0;
@@ -296,7 +298,6 @@
   }
   .badge.homing{ color:#1a6b0a; background:#c2e8b6; border-color:#7fbf6a; }
   .badge.swapped{ color:#555555; background:#eeeeee; border-color:#c0c0c0; }
-  .badge.locked-badge{ color:#14520a; background:#9ed389; border-color:#4f9c3a; }
   .badge.trivia-badge{ color:#5b2a86; background:#e6d9f5; border-color:#b98fe0; }
   /* Amber, the colour this game already uses for "close, but not it" — a near
      miss is the one badge that is neither a win nor a spent resource. */
@@ -340,8 +341,11 @@
   .year-row.homing-band .year-num-cell{ background:#c2e8b6; color:#1a6b0a; }
 
   /* Drop preview — last in the file so it outranks the filled/correct row
-     colours it has to paint over. Amber marks the year the dragged track lands
-     on, and the crate slot the track it displaces moves to. */
+     colours it has to paint over. Amber marks the year the held track would
+     land on. The crate slot its occupant would be bumped to gets no colour of
+     its own — paintDropPreview() draws that occupant's own card into it,
+     faded, the same translucent look a dragged element gets under your
+     cursor, rather than an unlabelled box standing in for it. */
   .year-row.drop-here{
     background:#fff3c4 !important;
     border-color:#cc8800;
@@ -349,40 +353,7 @@
     outline-offset: -2px;
   }
   .year-row.drop-here .year-num-cell{ background:#ffcc80; color:#7a4500; }
-  .year-row.drop-here .year-drop-cell:not(.empty)::after{
-    content: "LANDS HERE";
-    flex: 0 0 auto;
-    margin-left: 8px;
-    font-family: "Courier New", monospace;
-    font-weight:bold;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    padding: 2px 6px;
-    color:#7a4500;
-    background:#ffcc80;
-    border: 1px solid #b36b00;
-  }
-  .crate-slot.bump-into{
-    background:#fff3c4 !important;
-    border: 1px dashed #b36b00;
-  }
-  /* Same chip as the year row's, so the pair reads as one move: the dragged
-     track lands there, the one it displaces moves here. */
-  .crate-slot.bump-into::after{
-    content: "MOVES HERE";
-    flex: 0 0 auto;
-    margin: 0 4px 0 auto;
-    font-family: "Courier New", monospace;
-    font-weight:bold;
-    font-size: 11px;
-    letter-spacing: 0.5px;
-    white-space: nowrap;
-    padding: 2px 6px;
-    color:#7a4500;
-    background:#ffcc80;
-    border: 1px solid #b36b00;
-  }
+  .crate-slot.bump-preview{ opacity: 0.5; }
 
   .crate-slot{
     border: 1px dashed #c0c0c0;
@@ -406,7 +377,7 @@
     /* minmax(0,…) rather than a bare 1fr: the last track has to be able to
        shrink past the note field's intrinsic width when a skill-card badge
        shares the row, otherwise the badge is drawn over the top of it. */
-    grid-template-columns: 16px 28px 32px 40px minmax(0, 1fr) auto;
+    grid-template-columns: 16px 32px minmax(0, 1fr) auto;
     align-items:center;
     gap: 8px;
     width: 100%;
@@ -421,52 +392,47 @@
     font-size: 13px;
     text-align:center;
   }
-  .idx{
-    background:#eeeeee;
-    color:#555555;
-    font-family: "Courier New", monospace;
-    font-weight:bold;
-    font-size: 10px;
-    text-align:center;
-    padding: 3px 0;
-    border: 1px solid #d0d0d0;
-  }
-
+  /* --card-color (set inline per card, see renderCard) is each track's
+     identity color — the same one wherever it's drawn, so it keeps reading
+     as "that card" while it moves between the crate and the timeline. The
+     fallback is the button's old plain gray, for anywhere a color isn't set. */
   .play-btn{
     width: 30px;
     height: 24px;
-    background:#e8e8e8;
+    background: var(--card-color, #e8e8e8);
     border: 1px solid #a0a0a0;
     font-family: Arial, sans-serif;
     font-weight:bold;
     font-size: 11px;
     cursor:pointer;
     color:#333333;
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
-  .play-btn:hover{ background:#dcdcdc; }
-  .play-btn.is-playing{
-    background:#000080;
-    color:#ffffff;
-    border-color:#000060;
-  }
-  .play-btn:disabled{
-    cursor: default;
-    color:#aaaaaa;
-    background:#eeeeee;
-  }
+  /* A filter darkens whatever color is actually showing, rather than a flat
+     override that would have to know every card's color to match it. */
+  .play-btn:hover{ filter: brightness(0.92); }
+  .play-btn:disabled{ cursor: default; opacity: 0.6; }
 
+  /* Lives inside .play-btn (see renderCard) — playing swaps the glyph for
+     this instead of turning the button into a second, stop-labelled state.
+     currentColor picks up the button's own (fixed, dark) text color rather
+     than the card's background, so the bars read against every card color
+     the same way the ▶ glyph already does. */
   .eq{
     display:flex;
     align-items:flex-end;
-    gap: 2px;
-    width: 32px;
-    height: 18px;
+    gap: 1px;
+    width: 20px;
+    height: 14px;
   }
   .eq span{
-    width: 4px;
+    width: 3px;
     height: 20%;
-    background: #b8c4d9;
-    border: 1px solid #98a6bf;
+    background: currentColor;
+    border: 1px solid currentColor;
+    opacity: 0.55;
     animation: chunk 0.8s steps(4) infinite;
     animation-play-state: paused;
   }
@@ -475,7 +441,7 @@
   .eq span:nth-child(3){ animation-duration: .45s; animation-delay:.1s; }
   .eq span:nth-child(4){ animation-duration: .75s; animation-delay:.15s; }
   .eq span:nth-child(5){ animation-duration: .6s; animation-delay:.2s; }
-  .eq.playing span{ background:#000080; border-color:#000060; animation-play-state: running; }
+  .eq.playing span{ opacity: 1; animation-play-state: running; }
   @keyframes chunk{
     0%,100%{ height:20%; }
     50%{ height:100%; }
@@ -826,13 +792,15 @@
         </div>
       </td>
       <td>
-        <div class="panel">
-          <div class="panel-head">Crate <span class="hint">drag a track out</span></div>
-          <div class="scroll-area" id="crateArea"></div>
+        <div class="crate-col">
+          <div class="panel">
+            <div class="panel-head">Crate <span class="hint">drag a track out</span></div>
+            <div class="scroll-area" id="crateArea"></div>
+          </div>
+          <div class="overlay" id="overlay" hidden></div>
         </div>
       </td>
     </tr></table>
-    <div class="overlay" id="overlay" hidden></div>
   </div>
 
   <div class="footer">Titles stay hidden &mdash; place tracks by ear. Previews stream live from Apple's iTunes API.</div>
@@ -921,6 +889,18 @@
     return a;
   }
 
+  // One identity color per card, assigned by shuffle position in startBatch()
+  // and worn by its play button — the same track keeps its color wherever it
+  // moves (timeline, crate, bumped back), so a beacon/gut-check/bump preview
+  // reads as "that card" instead of just "something changed here". Order is
+  // the CVD-safety mechanism (validated with the dataviz skill's palette
+  // checker: worst adjacent pair ΔE 16.8 CVD-simulated / 17.2 normal vision,
+  // both clear of the floors) — cycling it is fine, re-sorting it is not.
+  const CARD_PALETTE = [
+    '#00adb8', '#75a322', '#ad74dd', '#e36368', '#7189f3',
+    '#b58d00', '#d365aa', '#da7306', '#009ee6', '#00af77',
+  ];
+
   // Everything a batch owns is rebuilt by startBatch(). Only `coins` and
   // `batchIndex` survive a batch boundary — those two are the run.
   let batchIndex = 0;
@@ -979,10 +959,22 @@
   // An Earlier/Later verdict is stored as the year it was tested against, not
   // as a bare "go later" — the same reasoning as Gut Check's near miss. Kept that
   // way it survives the track being dragged elsewhere, and two verdicts on one
-  // track close the answer in from both sides. Testing the same year twice
-  // tells you nothing new, hence the dedupe.
+  // track close the answer in from both sides — one 'before' and one 'after'.
+  // A second verdict on the SAME side only replaces the first if it actually
+  // tightens the bound (a smaller "before" year, or a larger "after" one) —
+  // a player who forgets an earlier result and re-tests further out shouldn't
+  // see the badge quietly loosen back up. Returns the bound already known when
+  // this test didn't improve on it, or null when it was recorded as new.
   function markDirection(card, year, dir){
-    if (!card.directions.some(d => d.year === year)) card.directions.push({ year, dir });
+    const existing = card.directions.find(d => d.dir === dir);
+    if (existing){
+      const tighter = dir === 'before' ? year < existing.year : year > existing.year;
+      if (!tighter) return existing.year;
+      existing.year = year;
+      return null;
+    }
+    card.directions.push({ year, dir });
+    return null;
   }
 
   // A stand-in has to match the answer year exactly and must not already be in
@@ -1088,13 +1080,19 @@
           return { ok: true, reward: paid,
             message: 'Spot on — the track is locked, and ' + coinWord(paid) + ' back.' };
         }
-        // The flash says it now; the badge says it for the rest of the decade.
-        // Recording the year it was tested against is what makes it keep its
-        // meaning after the track is dragged somewhere else.
-        markDirection(card, y, diff > 0 ? 'after' : 'before');
-        flash([y], diff > 0 ? 'LATER ↓' : 'EARLIER ↑', 'info');
-        return { ok: true, message: 'Its real year is ' + (diff > 0 ? 'after ' : 'before ') + y
-          + ' — badged on the track.' };
+        // The badge says it for the rest of the decade — recording the year it
+        // was tested against is what makes it keep its meaning after the track
+        // is dragged somewhere else. The flash just needs to point at the row;
+        // a label on top of it would only repeat what the badge already says.
+        const dir = diff > 0 ? 'after' : 'before';
+        const known = markDirection(card, y, dir);
+        flash([y], null, 'info');
+        // known is set when this test didn't tighten anything — the coin's
+        // still spent, but the message says so instead of implying progress.
+        const message = known !== null
+          ? 'Already known — its real year is ' + dir + ' ' + known + '.'
+          : 'Its real year is ' + dir + ' ' + y + ' — badged on the track.';
+        return { ok: true, message };
       }
     },
     {
@@ -1124,7 +1122,7 @@
         // Not "LOCKED" — the card already says that. The flash is the place to
         // show the payout, which nothing else on screen reports.
         const paid = CONFIG.skills.spotcheck.reward;
-        flash([y], '+' + paid + ' COIN' + (paid === 1 ? '' : 'S'), 'good');
+        flash([y], '+' + paid + COIN, 'good');
         return { ok: true, reward: paid,
           message: 'Exact year — the track is locked, and ' + coinWord(paid) + ' back.' };
       }
@@ -1287,6 +1285,14 @@
   // reads at a glance where a single thin character didn't.
   const ESCALATES_ICON = '<svg class="skill-escalates-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
     + '<polygon points="4.5,0.8 8,4.6 5.6,4.6 5.6,8.2 3.4,8.2 3.4,4.6 1,4.6" fill="currentColor"/></svg>';
+
+  // Replaces a locked track's whole badge row (see renderCard) — once a track
+  // is locked, which band/direction/near-miss it collected no longer matters,
+  // and clearing them back to one small icon gives the note field room to
+  // show the track's full name instead of clipping it.
+  const LOCKED_ICON = '<svg class="locked-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
+    + '<path d="M2.5 4V2.7a2 2 0 0 1 4 0V4" fill="none" stroke="currentColor" stroke-width="1"/>'
+    + '<rect x="1.3" y="4" width="6.4" height="4.2" fill="currentColor"/></svg>';
 
   // Renders a skill's `effects` in the card grammar: a condition, a keyword and
   // a coin delta per row, plus an optional caption over the coin column.
@@ -1576,6 +1582,7 @@
     cards = shuffled(batch.songs).map((song, i) => ({
       id: 'c' + i,
       song,
+      color: CARD_PALETTE[i % CARD_PALETTE.length],
       note: '',
       playing: false,
       ready: false,
@@ -1735,7 +1742,7 @@
     coinEl.className = 'skill-points' + (coins < COINS_START ? ' spent' : '');
   }
 
-  function renderCard(cardId, idx){
+  function renderCard(cardId){
     const card = cardById(cardId);
     const locked = confirmed.has(cardId);
     const div = document.createElement('div');
@@ -1756,28 +1763,39 @@
       paintHomingBand(homingFlash);   // an attach flash still running outlives the drag
     });
 
-    const btnLabel = card.playing ? '||' : (card.ready ? '&#9658;' : '&hellip;');
+    // Playing swaps the glyph for the EQ animation rather than a stop icon —
+    // the button still toggles playback either way, it just no longer reads
+    // as a separate play/stop pair of states.
+    const btnLabel = card.playing
+      ? '<span class="eq playing"><span></span><span></span><span></span><span></span><span></span></span>'
+      : (card.ready ? '&#9658;' : '&hellip;');
     // A locked track is settled, so there is nothing left to protect: it names
     // itself. A finished run names everything, so the player learns the answers
     // they never got to. The row is narrow and the text clips, hence the title —
     // hovering gives the whole line back.
-    const reveal = `${card.song.title} — ${card.song.artist} · ${card.song.year}`;
-    const idText = `${card.song.title} — ${card.song.artist}`;
-    const noteOrReveal = (revealAll || locked)
-      ? `<span class="reveal-text" title="${escapeAttr(reveal)}">${escapeAttr(reveal)}</span>`
-      : card.idRevealed
-        ? `<span class="reveal-text" title="${escapeAttr(idText)}">${escapeAttr(idText)}</span>`
-        : `<input class="note-input" type="text" placeholder="scribble a note..." value="${escapeAttr(card.note)}" />`;
+    const withYear = `${card.song.title} — ${card.song.artist} · ${card.song.year}`;
+    const nameOnly = `${card.song.title} — ${card.song.artist}`;
+    // A locked track sits on its own year row, so the row's own year label
+    // already says it — repeating it in the name would just be noise. A
+    // revealed-but-unlocked track (end of run, still on the wrong year or
+    // still in the crate) doesn't have that context, so it keeps the year.
+    const nameText = locked ? nameOnly : revealAll ? withYear : card.idRevealed ? nameOnly : null;
+    const noteOrReveal = nameText !== null
+      ? `<span class="reveal-text" title="${escapeAttr(nameText)}">${escapeAttr(nameText)}</span>`
+      : `<input class="note-input" type="text" placeholder="scribble a note..." value="${escapeAttr(card.note)}" />`;
 
     // The band is on the badge as well as the timeline: the player paid for it,
     // so making them re-drag the track to read it back would just be a tax.
-    const badges = `
+    // A locked track is settled — none of that is worth reading any more, so
+    // it clears entirely; the grip cell carries the lock icon instead (below).
+    const badges = locked
+      ? ''
+      : `
       ${card.homing ? `<span class="badge homing" title="Homing beacon — the real year is somewhere in ${card.homing.start}–${card.homing.end}">${card.homing.start}&ndash;${card.homing.end}</span>` : ''}
       ${card.nearMisses.map(y => `<span class="badge near-miss" title="Gut Check: this track's real year is one year away from ${y}">1 OFF ${y}</span>`).join('')}
       ${card.directions.map(d => `<span class="badge direction" title="Earlier/Later: this track's real year is ${d.dir} ${d.year}">${d.dir === 'after' ? 'AFTER' : 'BEFORE'} ${d.year}</span>`).join('')}
       ${card.swapped ? '<span class="badge swapped" title="Swapped once — cannot be swapped again">&#8646;</span>' : ''}
-      ${card.triviaRevealed ? '<span class="badge trivia-badge">TRIVIA</span>' : ''}
-      ${locked ? '<span class="badge locked-badge" title="Confirmed on its exact year — locked for the rest of the decade">LOCKED</span>' : ''}
+      ${card.triviaRevealed ? '<span class="badge trivia-badge" title="Trivia revealed">T</span>' : ''}
     `;
 
     // Sits below the row's inline items rather than only in the badge's tooltip,
@@ -1787,11 +1805,17 @@
       ? `<div class="card-trivia">${escapeAttr(triviaForYear(card.song.year))}</div>`
       : '';
 
+    // A locked track can't be dragged any more (see div.draggable above), so
+    // the grip that implied it could is replaced by the lock it earned instead
+    // of sitting unused off to the side. .card-row.locked-card .grip already
+    // colors this green — it used to just be tinting the "::" for the same state.
+    const gripOrLock = locked
+      ? `<span class="grip" title="Confirmed on its exact year — locked for the rest of the decade">${LOCKED_ICON}</span>`
+      : `<span class="grip">::</span>`;
+
     div.innerHTML = `
-      <span class="grip">::</span>
-      <span class="idx">${String(idx + 1).padStart(2,'0')}</span>
-      <button class="play-btn ${card.playing ? 'is-playing' : ''}" title="Play sample" ${card.ready ? '' : 'disabled'}>${btnLabel}</button>
-      <span class="eq ${card.playing ? 'playing' : ''}"><span></span><span></span><span></span><span></span><span></span></span>
+      ${gripOrLock}
+      <button class="play-btn" style="--card-color:${card.color}" title="Play sample" ${card.ready ? '' : 'disabled'}>${btnLabel}</button>
       ${noteOrReveal}
       <span class="card-badges">${badges}</span>
       ${triviaBlock}
@@ -1814,6 +1838,7 @@
   // player cannot follow. Instead it moves sideways into the crate, and the
   // hover preview marks the slot before the mouse button comes up.
   let dropPreview = null;   // target slot id — repaint key
+  let bumpPreviewSlot = null; // crate slot id currently showing a bumped-card ghost, for cleanup
 
   function firstFreeCrateSlot(){
     for (let i = 0; i < NUM_CARDS; i++) if (!slots['crate' + i]) return 'crate' + i;
@@ -1821,36 +1846,64 @@
   }
 
   // Which crate slot the occupant of `slotId` would move to, or null if the year
-  // is empty and nothing gets displaced. A track dragged out of the crate hands
-  // its own slot over, so the displaced one lands where the drag started rather
-  // than somewhere the player has to hunt for.
-  function bumpTargetFor(slotId, draggedId){
+  // is empty and nothing gets displaced. Always the first free slot from the
+  // top — same rule whether the drag came from the crate or from another year,
+  // so where a displaced track lands never depends on where the drag started.
+  function bumpTargetFor(slotId){
     if (!slots[slotId]) return null;
-    const source = slotOfCard(draggedId);
-    return source && source.startsWith('crate') ? source : firstFreeCrateSlot();
+    return firstFreeCrateSlot();
+  }
+
+  // Rebuilds one crate slot from the actual slots[] state — used to restore
+  // whatever paintDropPreview overwrote. bumpTargetFor() only ever hands back
+  // a genuinely free slot, so this is always restoring to empty in practice —
+  // rebuilding from slots[] rather than assuming that is just the cheap way
+  // to stay correct if that ever stops being true.
+  function repaintCrateSlot(slotId){
+    const el = document.querySelector('.crate-slot[data-slot="' + slotId + '"]');
+    if (!el) return;
+    const cardId = slots[slotId];
+    el.className = 'crate-slot' + (cardId ? '' : ' empty');
+    el.innerHTML = '';
+    if (cardId) el.appendChild(renderCard(cardId));
+    else el.textContent = 'empty';
   }
 
   function clearDropPreview(){
     if (!dropPreview) return;
     dropPreview = null;
-    document.querySelectorAll('.drop-here, .bump-into')
-      .forEach(el => el.classList.remove('drop-here', 'bump-into'));
+    document.querySelectorAll('.drop-here').forEach(el => el.classList.remove('drop-here'));
+    if (bumpPreviewSlot){
+      repaintCrateSlot(bumpPreviewSlot);
+      bumpPreviewSlot = null;
+    }
   }
 
   function paintDropPreview(slotId, rowEl, draggedId){
+    // Hovering a track back over the slot it already occupies is a no-op on
+    // drop (see the sourceSlot === slotId check below) — painting it as a
+    // bump made it look like the track would displace itself back to the crate.
+    if (slotOfCard(draggedId) === slotId){
+      clearDropPreview();
+      return;
+    }
     if (dropPreview === slotId) return;
     clearDropPreview();
     dropPreview = slotId;
     rowEl.classList.add('drop-here');
-    const bumpTo = bumpTargetFor(slotId, draggedId);
+    const bumpTo = bumpTargetFor(slotId);
     if (!bumpTo) return;      // empty year: nothing is displaced, nothing to show
     const crateEl = document.querySelector('.crate-slot[data-slot="' + bumpTo + '"]');
-    if (crateEl) crateEl.classList.add('bump-into');
+    if (!crateEl) return;
+    crateEl.className = 'crate-slot bump-preview';
+    crateEl.innerHTML = '';
+    crateEl.appendChild(renderCard(slots[slotId]));
+    bumpPreviewSlot = bumpTo;
   }
 
   function dropOnYear(draggedId, sourceSlot, slotId){
     const displaced = slots[slotId];
-    const bumpTo = bumpTargetFor(slotId, draggedId);   // read before anything moves
+    const bumpTo = bumpTargetFor(slotId);   // read before anything moves
     slots[sourceSlot] = null;
     slots[slotId] = draggedId;
     if (displaced) slots[bumpTo] = displaced;
@@ -1902,6 +1955,11 @@
       e.preventDefault();
       e.stopPropagation();  // rows sit inside the timeline-wide drop target
       rowEl.classList.remove('drag-over', 'skill-hover');
+      // stopPropagation above means a drop landing on a row never reaches the
+      // timeline container's own 'drop' handler — the one that otherwise turns
+      // its column-wide highlight off — so a timeline-wide skill (which always
+      // lands on some row) left it lit for the rest of the run. Cleared here too.
+      el.closest('.scroll-area')?.classList.remove('skill-target');
       const draggedId = e.dataTransfer.getData('text/plain');
       dragging = null;      // render() kills the drag source, so dragend may never fire
       if (!draggedId) return;
@@ -1979,7 +2037,7 @@
       const dropEl = document.createElement('div');
       dropEl.className = 'year-drop-cell' + (cardId ? '' : ' empty');
       if (cardId){
-        dropEl.appendChild(renderCard(cardId, parseInt(cardId.slice(1),10)));
+        dropEl.appendChild(renderCard(cardId));
       } else if (!shouldHold){
         dropEl.textContent = 'drop a track here';   // not on a row about to name its answer
       }
@@ -1995,7 +2053,7 @@
       // No separate row mark for a locked track: the card carries a LOCKED badge
       // and the row is already green-bordered. A ✓ next to it was a third way of
       // saying the same thing, and it crowded the note field out.
-      if (highlighted){
+      if (highlighted && highlight.label){
         const label = document.createElement('span');
         label.className = 'hl-label';
         label.textContent = highlight.label;
@@ -2017,7 +2075,7 @@
       slotEl.className = 'crate-slot' + (cardId ? '' : ' empty');
       slotEl.dataset.slot = slotId;
       if (cardId){
-        slotEl.appendChild(renderCard(cardId, i));
+        slotEl.appendChild(renderCard(cardId));
       } else {
         slotEl.textContent = 'empty';
       }
