@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sanoj - A Release-Year Music Trivia Game</title>
-<meta property="og:title" content="Sanoj - A Release-Year Music Trivia Game">
+<title>Sanoj - A Music Trivia Game for Friends</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<meta property="og:title" content="Sanoj - A Music Trivia Game for Friends">
 <meta property="og:description" content="Drag songs onto the year you think they came out. Five decades, titles hidden, coins as your only lives.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://vghpe.github.io/sanoj-game/">
 <meta property="og:image" content="https://vghpe.github.io/sanoj-game/og-image.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="908">
+<meta property="og:image:width" content="1121">
+<meta property="og:image:height" content="1121">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Sanoj - A Release-Year Music Trivia Game">
+<meta name="twitter:title" content="Sanoj - A Music Trivia Game for Friends">
 <meta name="twitter:description" content="Drag songs onto the year you think they came out. Five decades, titles hidden, coins as your only lives.">
 <meta name="twitter:image" content="https://vghpe.github.io/sanoj-game/og-image.png">
 <style>
@@ -486,6 +487,7 @@
   /* A filter darkens whatever colour is showing, whatever the card. */
   .play-btn:hover{ filter: brightness(0.92); }
   .play-btn:disabled{ cursor: default; opacity: 0.6; }
+  .card-row.locked-card .play-btn{ background: #f0f0f0; }
 
   /* Lives inside .play-btn; playing swaps the ▶ glyph for this. currentColor
      = the button's text colour, so the bars read against every card colour. */
@@ -755,6 +757,27 @@
     50%{ outline: 2px solid #000080; outline-offset: -2px; }
   }
 
+  /* A moved card's transient stand-in (see cardGhost) — plays once from the
+     spot it left to the spot it landed in, then removes itself. Used for both
+     an incoming placement and a bumped track's return trip (see
+     playCardGhosts). --ghost-dx/dy are set per-instance in JS; the base
+     left/top/width/height are the FINAL position, and the keyframe's `from`
+     offsets back to the old one, so the motion is a straight FLIP regardless
+     of direction or distance. The fade covers for the clone losing its
+     ancestor-scoped shape (crate square vs. timeline row) once it's detached
+     and appended to <body>. */
+  @keyframes card-slide{
+    from{ transform: translate(var(--ghost-dx), var(--ghost-dy)); opacity: 1; }
+    to{ transform: translate(0, 0); opacity: 0; }
+  }
+  .card-ghost{
+    position: fixed;
+    margin: 0;
+    pointer-events: none;
+    z-index: 50;
+    animation: card-slide 0.28s ease-out forwards;
+  }
+
   /* The card yields when a badge joins it in the row. */
   .year-drop-cell > .card-row{ flex: 1 1 auto; min-width: 0; }
 
@@ -884,15 +907,14 @@
     .year-drop-cell{ padding: 6px 8px; }
     /* A placed track's row: the grip is the one thing here that means
        "drag me", and nothing drags on a phone — so it goes, and its column
-       with it (auto, so the column reappears at the width of the lock a
-       locked track shows in the same place). The button column grows to hold
-       a 40px target, and the badges give back the room the grip freed. */
+       with it. The button column grows to hold a 40px target (a locked track
+       shows its lock there instead of the play triangle), and the badges give
+       back the room the grip freed. */
     .year-drop-cell .card-row{
       /* Two columns — button, note. The hidden grip is out of the grid
          entirely, so a template that still counted its column would slide the
-         note into the button's 40px. A locked row puts its lock back where
-         the grip was and gets the third column below; a badged row gets a
-         column on the right instead. */
+         note into the button's 40px. A badged row gets a column on the right
+         instead. */
       grid-template-columns: 40px minmax(0, 1fr);
       /* The badge column's own width, which is what the strip wraps at and
          so what fitBadges() packs against. The note keeps the rest. */
@@ -901,9 +923,6 @@
          past that the row starts growing. fitBadges() shortens wordings until
          they fit in two, rather than letting the strip stack. */
       --badge-rows: 2;
-    }
-    .year-drop-cell .card-row.locked-card{
-      grid-template-columns: auto 40px minmax(0, 1fr);
     }
     /* Badges ride on the right of the row rather than below it: two short
        rows of them cost the same height as the play button already spends,
@@ -924,7 +943,7 @@
          against — one number, or the row count comes out wrong. */
       max-width: 150px;
     }
-    .year-drop-cell .card-row:not(.locked-card) .grip{ display: none; }
+    .year-drop-cell .card-row .grip{ display: none; }
     /* Big enough to hit on the move, still subordinate to the card it sits on. */
     .card-row .play-btn{ width: 40px; height: 40px; }
     /* The whole collapse control, not just its text. */
@@ -1277,7 +1296,7 @@
 <table class="content" cellspacing="0" cellpadding="0" align="center">
 <tr><td>
 
-  <div class="title-bar"><span id="titleText">Sanoj - A Release-Year Music Trivia Game</span><button class="reverse-toggle" id="reverseToggle" title=" " aria-hidden="true" tabindex="-1"></button></div>
+  <div class="title-bar"><span id="titleText">Sanoj - A Music Trivia Game for Friends</span><button class="reverse-toggle" id="reverseToggle" title=" " aria-hidden="true" tabindex="-1"></button></div>
 
   <div class="sub-bar">
     <span class="run-track" id="runTrack"></span>
@@ -1287,7 +1306,7 @@
   <details class="how-to" open>
     <summary>HOW TO PLAY</summary>
     <ul>
-      <li><span class="desktop-only"><b>Drag</b> a track onto its year.</span><span class="mobile-only"><b>Tap</b> a track, then a year.</span> Only a skill can <span class="kw"><svg width="9" height="9" viewBox="0 0 9 9" aria-hidden="true"><path d="M2.5 4V2.7a2 2 0 0 1 4 0V4" fill="none" stroke="currentColor" stroke-width="1"/><rect x="1.3" y="4" width="6.4" height="4.2" fill="currentColor"/></svg></span> it, and only locked tracks clear the decade.</li>
+      <li><span class="desktop-only"><b>Drag</b> a track onto its year.</span><span class="mobile-only"><b>Tap</b> a track, then a year.</span> Only a skill can <span class="kw"><svg width="12" height="12" viewBox="0 0 9 9" aria-hidden="true"><path d="M2.5 4V2.7a2 2 0 0 1 4 0V4" fill="none" stroke="#7fbf6a" stroke-width="1"/><rect x="1.3" y="4" width="6.4" height="4.2" fill="#7fbf6a"/></svg></span> it, and only locked tracks clear the decade.</li>
       <li><b>Badges narrow it down.</b> Most skills leave a <span class="badge info badge-inline">BADGE</span> on the track, and they stack.</li>
       <li>The answer is the <b>album</b> year, not the single.</li>
       <li><b>Spend hearts on skills.</b> Start with <b><span id="howToCoins">7</span> <svg class="coin-icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 8.6 C1.2 6.0 0.6 4.0 1.9 2.5 3.1 1.2 4.5 1.8 5 2.8 5.5 1.8 6.9 1.2 8.1 2.5 9.4 4.0 8.8 6.0 5 8.6 Z" fill="#b3265b" stroke="#7a1039" stroke-width="0.6" stroke-linejoin="round"/></svg></b> &mdash; reach zero and you lose.</li>
@@ -1725,8 +1744,8 @@
   // Which deck column each card renders in — a hand-picked grouping. A
   // disabled skill or an id with no entry here just doesn't render.
   const SKILL_COLUMNS = [
-    ['spotcheck', 'gutcheck'],
-    ['homing', 'yeartrivia', 'highlow'],
+    ['highlow', 'gutcheck'],
+    ['homing', 'yeartrivia', 'spotcheck'],
     ['swap'],
   ];
 
@@ -1736,7 +1755,7 @@
   // together as the set they are. The two sides come out about the same
   // height once the blurbs move to the message line.
   const SKILL_COLUMNS_MOBILE = [
-    ['spotcheck', 'gutcheck', 'highlow'],
+    ['highlow', 'gutcheck', 'spotcheck'],
     ['homing', 'yeartrivia', 'swap'],
   ];
 
@@ -1754,7 +1773,7 @@
   // instead of the font's (the real coin glyph, U+1FA99, read as a grey moon
   // at 10px).
   const COIN = '<svg class="coin-icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">'
-    + '<path d="M5 8.6 C1.2 6.0 0.6 4.0 1.9 2.5 3.1 1.2 4.5 1.8 5 2.8 5.5 1.8 6.9 1.2 8.1 2.5 9.4 4.0 8.8 6.0 5 8.6 Z" fill="#b3265b" stroke="#7a1039" stroke-width="0.6" stroke-linejoin="round"/></svg>';
+    + '<path d="M5 8.6 C1.2 6.0 0.6 4.0 1.9 2.5 3.1 1.2 4.5 1.8 5 2.8 5.5 1.8 6.9 1.2 8.1 2.5 9.4 4.0 8.8 6.0 5 8.6 Z" fill="#b3265b"/></svg>';
 
   function costTitle(skill, cost){
     return cost === 0 ? 'Free to use' : 'Costs ' + coinWord(cost);
@@ -1771,9 +1790,9 @@
   // badges no longer matter, and the name gets the room back. Also stands in
   // for the word "LOCK" everywhere else it used to appear as text: a fx row
   // whose result locks the track (see fxRow) and the how-to blurb.
-  const LOCKED_ICON = '<svg class="locked-icon" width="9" height="9" viewBox="0 0 9 9" aria-hidden="true">'
-    + '<path d="M2.5 4V2.7a2 2 0 0 1 4 0V4" fill="none" stroke="currentColor" stroke-width="1"/>'
-    + '<rect x="1.3" y="4" width="6.4" height="4.2" fill="currentColor"/></svg>';
+  const LOCKED_ICON = '<svg class="locked-icon" width="12" height="12" viewBox="0 0 9 9" aria-hidden="true">'
+    + '<path d="M2.5 4V2.7a2 2 0 0 1 4 0V4" fill="none" stroke="#7fbf6a" stroke-width="1"/>'
+    + '<rect x="1.3" y="4" width="6.4" height="4.2" fill="#7fbf6a"/></svg>';
 
   // The mark a skill leaves, drawn the way the player will meet it: the same
   // little coloured box as the real thing on the track, not a symbol standing
@@ -1844,16 +1863,21 @@
     // The one heart on the card, on the row every paying skill has. A free
     // single-use card (Swap) has no cost row and no numbers under it, so it
     // needs no unit either.
-    const costTag = (cost === 0 ? '0' : '−' + cost) + COIN;
+    const costTag = (cost === 0 ? '0' : '−' + cost) + ' ' + COIN;
     const costRow = (cost > 0 || escalates(skill))
       ? fxRow('Cost', -cost, escalates(skill) ? ESCALATES_ICON : '',
               costTitle(skill, cost), costTag)
       : '';
     // Every row fills every cell, zero included — blank cells broke the column scan.
     const rows = (skill.effects || [])
-      .map(fx => fx.result === 'INFO BADGE'
-        ? fxRow(fx.when, 0, '', fx.hint, INFO_CHIP)
-        : fxRow(fx.when, fx.coins || 0, fx.result === 'LOCK' ? LOCKED_ICON : '', fx.hint))
+      .map(fx => {
+        if (fx.result === 'INFO BADGE') {
+          return fxRow(fx.when, 0, '', fx.hint, INFO_CHIP);
+        }
+        const coins = fx.coins || 0;
+        const coinDisplay = (coins > 0 ? '+' : coins < 0 ? '−' : '') + Math.abs(coins) + ' ' + COIN;
+        return fxRow(fx.when, coins, fx.result === 'LOCK' ? LOCKED_ICON : '', fx.hint, coinDisplay);
+      })
       .join('');
     // Said once over the column instead of "ea" on every line of it.
     const head = skill.perUnit
@@ -2258,7 +2282,7 @@
         // name collided its "?" with the full stop.
         setSkillMsg(isMobile() ? skill.short + ' Tap ' + skill.use + '.'
                                : skill.name + ' — tap ' + skill.use + '.',
-                    false, isMobile());
+                    false, false);
       });
     }
     if (inert){
@@ -2386,7 +2410,10 @@
     return rows;
   }
 
-  function fitAllBadges(){ document.querySelectorAll('.card-row').forEach(fitBadges); }
+  // Excludes .card-ghost: a live move animation's clone is a frozen, detached
+  // .card-row with its own inline width — measuring it would rewrite its
+  // badge text mid-flight for no reason, since it's about to be removed anyway.
+  function fitAllBadges(){ document.querySelectorAll('.card-row:not(.card-ghost)').forEach(fitBadges); }
 
   function renderCard(cardId){
     const card = cardById(cardId);
@@ -2428,9 +2455,10 @@
       paintHomingBand(homingFlash);   // an attach flash still running outlives the drag
     });
 
-    // Playing swaps the glyph for the EQ animation, not a stop icon.
+    // Playing swaps the glyph for the EQ animation, not a stop icon. Locked shows the lock icon.
     const btnLabel = card.playing
       ? '<span class="eq playing"><span></span><span></span><span></span><span></span><span></span></span>'
+      : locked ? LOCKED_ICON
       : (card.ready ? '&#9658;' : '&hellip;');
     // A locked track names itself; a finished run names everything. The text
     // clips in the narrow row, hence the title.
@@ -2472,10 +2500,8 @@
       ? `<div class="card-trivia">${escapeAttr(triviaForYear(card.song.year))}</div>`
       : '';
 
-    // The grip implied draggable; a locked track shows the lock it earned instead.
-    const gripOrLock = locked
-      ? `<span class="grip" title="Confirmed on its exact year — locked for the rest of the decade">${LOCKED_ICON}</span>`
-      : `<span class="grip">::</span>`;
+    // The grip implies draggable; locked tracks show it grayed out since they can't be dragged.
+    const gripOrLock = `<span class="grip">::</span>`;
 
     div.innerHTML = `
       ${gripOrLock}
@@ -2601,32 +2627,139 @@
     bumpPreviewSlot = bumpTo;
   }
 
+  // A card that just moved — placed, or bumped back to the crate — otherwise
+  // just vanishes from its old spot and reappears in the new one. This plays
+  // a transient visual copy sliding between the two, on top of the real
+  // (already-correct) card render() just placed, so gameplay state is never
+  // delayed by it. Two-phase: call before the state change + render() to
+  // snapshot; call the returned `.hide()` right after render(), before
+  // anything paints — this must happen for every ghost in a placement right
+  // away, even one that won't play until later (see playCardGhosts), or its
+  // landing spot would flash visible in the meantime. Call `.start()`
+  // whenever it's that ghost's actual turn to slide.
+  function cardGhost(cardId){
+    const oldEl = document.querySelector(`.card-row[data-card-id="${cardId}"]`);
+    if (!oldEl) return null;
+    const oldRect = oldEl.getBoundingClientRect();
+    const clone = oldEl.cloneNode(true);
+    let newEl = null, newRect = null, dx = 0, dy = 0, hidden = false;
+
+    function hide(){
+      newEl = document.querySelector(`.card-row[data-card-id="${cardId}"]`);
+      if (!newEl) return;
+      const slotEl = isMobile() ? newEl.closest('.crate-slot') : null;
+      if (slotEl){
+        // The strip needs to actually carry the player's eye there — the same
+        // scroll showCrateHome plays when a track is picked up, not an instant
+        // jump. But its finishing position has to be known now, not once the
+        // animation settles, or the ghost would be aiming at a moving target.
+        // So: jump there instantly to measure the true landing rect, jump back
+        // before anything paints, then (in start()) play the real scroll from
+        // where the strip actually was. getBoundingClientRect() forces layout
+        // but not paint, and nothing here yields to the event loop in between,
+        // so the mid-measurement jump is never on screen.
+        const area = document.getElementById('crateArea');
+        const startLeft = area.scrollLeft;
+        scrollCrateToSlot(slotEl, 'instant');
+        newRect = newEl.getBoundingClientRect();
+        area.scrollLeft = startLeft;
+      } else {
+        newRect = newEl.getBoundingClientRect();
+      }
+      dx = oldRect.left - newRect.left;
+      dy = oldRect.top - newRect.top;
+      if (!dx && !dy) return;   // landed exactly where it started — nothing to hide or show
+      // Not display:none, so layout/badge-fitting still sees it — just not
+      // painted until the ghost catches up, so the move doesn't visibly
+      // happen twice: once instantly, then again as the ghost arrives.
+      newEl.style.visibility = 'hidden';
+      hidden = true;
+    }
+
+    function start(){
+      if (!hidden) return;
+      const slotEl = isMobile() ? newEl.closest('.crate-slot') : null;
+      if (slotEl) scrollCrateToSlot(slotEl, 'smooth');
+      clone.classList.add('card-ghost');
+      clone.style.left = newRect.left + 'px';
+      clone.style.top = newRect.top + 'px';
+      clone.style.width = newRect.width + 'px';
+      clone.style.height = newRect.height + 'px';
+      clone.style.setProperty('--ghost-dx', dx + 'px');
+      clone.style.setProperty('--ghost-dy', dy + 'px');
+      document.body.appendChild(clone);
+      // animationend and the safety timeout both call done(); without this
+      // guard both firing (the common case, not just the timeout's fallback
+      // role) replayed the ghost's effects a second time.
+      let finished = false;
+      const done = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(safety);
+        clone.remove();
+        newEl.style.visibility = '';
+      };
+      clone.addEventListener('animationend', done, { once: true });
+      const safety = setTimeout(done, 400);   // in case animationend doesn't fire
+    }
+
+    return { hide, start };
+  }
+
+  // .card-ghost's own animation-duration — kept in sync by hand since CSS
+  // can't hand a JS constant the other way. Used only to time the overlap
+  // below, not to drive the animation itself.
+  const GHOST_MS = 280;
+  // How much sooner the second ghost starts than a full handoff would allow.
+  // Strictly sequential (0) read as stiff; this lets the return begin while
+  // the placement is still finishing, without racing to start together.
+  const GHOST_OVERLAP_MS = 160;
+
+  // Plays a placement's up-to-two ghosts: the incoming card leads, and the
+  // bumped track's return starts a beat before it fully lands rather than
+  // waiting on it — enough that the placement still reads first, not so much
+  // that the two are indistinguishable.
+  function playCardGhosts(placeGhost, bumpGhost){
+    if (placeGhost) placeGhost.start();
+    if (!bumpGhost) return;
+    if (placeGhost) setTimeout(() => bumpGhost.start(), GHOST_MS - GHOST_OVERLAP_MS);
+    else bumpGhost.start();
+  }
+
+  // Returns the displaced card's id, or null if the year was empty — callers
+  // use this to know whether a bump-return animation has anything to play.
   function dropOnYear(draggedId, sourceSlot, slotId){
     const displaced = slots[slotId];
     const bumpTo = bumpTargetFor(slotId);   // read before anything moves
     slots[sourceSlot] = null;
     slots[slotId] = draggedId;
     if (displaced) slots[bumpTo] = displaced;
+    return displaced || null;
   }
 
   // Mobile: a track has one home slot and every crate tap sends it there —
   // nothing to aim, nothing to displace. Desktop: undifferentiated storage —
   // crate-to-crate swaps, a track off the timeline takes the first free slot
   // (which always exists: it just vacated a year).
+  // Returns the bumped occupant's id in the one branch that actually
+  // displaces someone (a timeline track landing on a full crate slot); null
+  // otherwise — the crate-to-crate swap trades two cards that never left the
+  // crate, nothing to animate.
   function placeInCrate(draggedId, sourceSlot, slotId){
     if (isMobile()){
       slots[sourceSlot] = null;
       slots[cardById(draggedId).crateSlot] = draggedId;
-      return;
+      return null;
     }
     const occupant = slots[slotId];
     if (occupant && !sourceSlot.startsWith('crate')){
       slots[sourceSlot] = null;
       slots[firstFreeCrateSlot()] = draggedId;
-      return;
+      return occupant;
     }
     slots[sourceSlot] = occupant || null;
     slots[slotId] = draggedId;
+    return null;
   }
 
   // ---- Tap mode -------------------------------------------------------------
@@ -2767,6 +2900,21 @@
     if (tookOne && isMobile() && next.kind === 'card') showCrateHome(next.id);
   }
 
+  // Scrolls the strip so `slotEl`'s square is in view, one square short of
+  // the edge — second from the left, not hard against it, so the square
+  // before it stays in frame and says the strip runs on rather than starts
+  // here. The leftmost square has nothing before it and simply leads. Shared
+  // by showCrateHome (a held track's own home square) and cardGhost (a
+  // moved track's landing square) — one piece of scroll math, so both read
+  // as the same motion.
+  function scrollCrateToSlot(slotEl, behavior){
+    const area = document.getElementById('crateArea');
+    if (!area || !slotEl) return;
+    const anchor = slotEl.previousElementSibling || slotEl;
+    const delta = anchor.getBoundingClientRect().left - area.getBoundingClientRect().left;
+    area.scrollTo({ left: Math.max(0, area.scrollLeft + delta - 6), behavior });
+  }
+
   // Scrolls the strip to the empty square a held track came out of, so the
   // yellow marking "put it back here" is actually on screen. scrollLeft
   // rather than scrollIntoView: the strip lives inside the page, and
@@ -2776,13 +2924,7 @@
     const card = cardById(cardId);
     if (!area || !card || slotOfCard(cardId).startsWith('crate')) return;
     const home = area.querySelector('.crate-slot[data-slot="' + card.crateSlot + '"]');
-    if (!home) return;
-    // Second from the left, not hard against the edge: the square before it
-    // stays in frame, which says the strip runs on rather than starts here.
-    // The leftmost square has nothing before it and simply leads.
-    const anchor = home.previousElementSibling || home;
-    const delta = anchor.getBoundingClientRect().left - area.getBoundingClientRect().left;
-    area.scrollTo({ left: Math.max(0, area.scrollLeft + delta - 6), behavior: 'smooth' });
+    if (home) scrollCrateToSlot(home, 'smooth');
   }
 
   // Decides what the toast is saying from `armed`, like every painter here.
@@ -2977,10 +3119,16 @@
       if (!sourceSlot || sourceSlot === slotId){ setArmed(null); return; }
       // A locked row refuses; the held track stays in hand.
       if (isLocked(slotId)) return;
-      if (slotId.startsWith('crate')) placeInCrate(armed.id, sourceSlot, slotId);
-      else dropOnYear(armed.id, sourceSlot, slotId);
+      const bumped = slotId.startsWith('crate')
+        ? placeInCrate(armed.id, sourceSlot, slotId)
+        : dropOnYear(armed.id, sourceSlot, slotId);
+      const placeG = cardGhost(armed.id);
+      const bumpG = bumped ? cardGhost(bumped) : null;
       setArmed(null);
       render();
+      placeG?.hide();
+      bumpG?.hide();
+      playCardGhosts(placeG, bumpG);
     });
 
     el.addEventListener('dragover', e => {
@@ -3025,10 +3173,16 @@
 
       const sourceSlot = slotOfCard(draggedId);
       if (!sourceSlot || sourceSlot === slotId || isLocked(slotId)){ clearDropPreview(); return; }
-      if (slotId.startsWith('crate')) placeInCrate(draggedId, sourceSlot, slotId);
-      else dropOnYear(draggedId, sourceSlot, slotId);
+      const bumped = slotId.startsWith('crate')
+        ? placeInCrate(draggedId, sourceSlot, slotId)
+        : dropOnYear(draggedId, sourceSlot, slotId);
+      const placeG = cardGhost(draggedId);
+      const bumpG = bumped ? cardGhost(bumped) : null;
       clearDropPreview();
       render();
+      placeG?.hide();
+      bumpG?.hide();
+      playCardGhosts(placeG, bumpG);
     });
   }
 
@@ -3159,6 +3313,14 @@
     document.getElementById('crateCount').textContent = '(' + crateCount + ')';
     renderRunTrack();
     renderSkills();
+
+    // Show special message when all tracks are placed but nothing locked
+    if (runState === 'playing' && !armed && crateCount === 0 && confirmed.size === 0) {
+      const skillMsg = document.getElementById('skillMsg');
+      skillMsg.innerHTML = 'Use skills to lock ' + LOCKED_ICON + ' tracks.';
+      skillMsg.className = 'skill-msg';
+    }
+
     renderOverlay();
     // Last, because the marks it paints sit on elements every call above has
     // just replaced — the skill cards included.
@@ -3242,7 +3404,7 @@
   document.getElementById('reverseToggle').addEventListener('click', () => {
     reversed = !reversed;
     swapMainAndBackup();
-    document.getElementById('titleText').textContent = 'Sanoj' + (reversed ? ' (Reversed)' : '') + ' - A Release-Year Music Trivia Game';
+    document.getElementById('titleText').textContent = 'Sanoj' + (reversed ? ' (Reversed)' : '') + ' - A Music Trivia Game for Friends';
     coins = COINS_START;
     startBatch(0);
   });
@@ -3303,11 +3465,6 @@
 
   attachTimelineDropTarget(document.getElementById('timelineArea'));
   attachCrateTapTarget(document.getElementById('crateArea'));
-
-  // Folded away on a phone so the board starts near the top; `open` is an
-  // attribute, so CSS can't do this. Load only — reopening it is the player's
-  // call, and a later resize shouldn't overrule that.
-  if (isMobile()) document.querySelector('.how-to').removeAttribute('open');
 
   startBatch(0);
 </script>
