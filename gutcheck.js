@@ -11,13 +11,9 @@
 // ---------------------------------------------------------------------------
 //  Economy — every number the check pays or charges. Expect to retune these.
 // ---------------------------------------------------------------------------
-// The first check of a decade costs COST_START; every check after that costs
-// COST_STEP more, and the price resets when the decade does. A flat price made
-// the board worth re-checking over and over: each pass rules out three years
-// per track for one coin, where a spot check rules out one for one, so a player
-// with no ear for the music could grind a decade out more cheaply by checking
-// than by guessing. Charging more for each repeat leaves the opening read cheap
-// and makes the grind the expensive way round.
+// COST_START for the first check of a decade, +COST_STEP each after, reset
+// per decade — escalation is what keeps grinding checks from beating guessing
+// (see design.md).
 const GUT_CHECK_COST_START = 2;
 const GUT_CHECK_COST_STEP = 1;
 const GUT_CHECK_EXACT_REWARD = 1;    // per track sitting on its exact year (also locks it)
@@ -60,17 +56,19 @@ const GUT_CHECK_SKILL = {
   target: 'timeline',
   use: 'the timeline',
   requirement: 'a song on the timeline',
-  short: 'Tests every placed track at once.',
-  // Printed on the card in the shared effects grammar — see SKILLS in
-  // song-year-placer.html for the shape. `each` because a check pays and
-  // charges per track, not per use.
-  // "per track" is the caption over the coin column: a check pays and charges
-  // once for every track it touches, and saying so once beats "ea" on each row.
+  // {badge:near-miss} is swapped for a chip in that badge's own amber by the
+  // renderer (withBadgeChips in song-year-placer.html).
+  short: 'Tests every placed track at once — a near miss leaves a {badge:near-miss}.',
+  // The caption over the coin column — a check pays and charges per track,
+  // not per use. See SKILLS in song-year-placer.html for the effects shape.
   perUnit: 'per track',
   effects: [
     { when: 'spot on',    result: 'LOCK', coins: GUT_CHECK_EXACT_REWARD,
       hint: 'On its exact year: the track locks for the decade and pays out.' },
-    { when: '1 year out', result: 'INFO BADGE', coins: 0,
+    // Plain 0 rather than the INFO mark the other badge-leaving skills show:
+    // this card is read as a column of per-track arithmetic, and the badge it
+    // leaves is already promised in the blurb above. See `short`.
+    { when: '1 year out', result: 'NEAR', coins: 0,
       hint: 'Leaves a badge on the track naming the year it was tested against, '
         + 'so its real year is one either side of that. Costs nothing, pays nothing.' },
     { when: 'further out', result: 'MISS', coins: -GUT_CHECK_MISS_PENALTY,
