@@ -95,14 +95,9 @@
   /* Flex containers ignore this — it only matters where the icon sits in
      plain text flow (the how-to blurb), so it's harmless everywhere else. */
   .coin-icon{ vertical-align: -1px; }
-  /* The currency is a heart: coins were always the life bar rather than a
-     score (see settleRun), and a heart says that without a rule explaining
-     it. Purple-red keeps it clear of the red a lost coin is printed in and
-     of the trivia purple. The code still says "coins" throughout — that is
-     the model's word for the thing, and the icon is what the player reads.
-     The path is centred on its own ink, not on the viewBox: a heart's mass
-     is in its lobes and its point is dead space, so drawn box-centred beside
-     a digit it reads as sitting low. */
+  /* The currency icon is a heart — coins are the life bar (see settleRun) —
+     but the code still says "coins" throughout. The SVG path is centred on
+     its ink, not its viewBox, or it reads as sitting low beside a digit. */
 
   .cols{ width:100%; }
   .cols td{ width:50%; padding: 10px; }
@@ -178,13 +173,6 @@
     background:#cfe3ff !important;
     border-color:#7fa8d9;
   }
-
-  /* Vivid green = exact year; paler .near = one year out, still scores. */
-  .year-row.correct{ background:#bfe6b0 !important; border-color:#4f9c3a; }
-  .year-row.correct .year-num-cell{ background:#9ed389; color:#14520a; }
-  .year-row.near{ background:#e4f5dc !important; border-color:#a5cf94; }
-  .year-row.near .year-num-cell{ background:#cbe9bd; color:#3f6b33; }
-  .year-row.incorrect{ background:#fbe6e3 !important; border-color:#dba59c; }
 
   /* Where a misplaced track belonged, shown once the run is over. */
   .year-row.answer-row{ background:#f4f4f4 !important; border-color:#c0c0c0; }
@@ -277,11 +265,8 @@
   .how-to:not([open]) > summary::before{ content:"\25BA  "; }
   .how-to ul{ margin: 6px 0 0; padding-left: 18px; }
   .how-to li{ margin-bottom: 3px; line-height: 1.45; }
-  /* Wraps the inline lock icon standing in for the word "LOCK" — same icon
-     the cards and a locked track's grip use, so it means one thing everywhere. */
-  /* The lock's own green, the one it wears on an effects row and on a locked
-     year (.fx-coin.pos, .year-row.locked) — the icon means the same thing in
-     the how-to, so it is the same colour there. */
+  /* Wraps the inline lock icon standing in for the word "LOCK" — same icon,
+     same green, as everywhere else the lock appears. */
   .how-to .kw{ color:#14520a; vertical-align: -1px; }
 
   /* Badges skill cards leave on a track. */
@@ -394,27 +379,18 @@
   .play-btn,
   .how-to{ touch-action: manipulation; }
 
-  /* Yellow is one thing in this game and one only: somewhere you can tap
-     right now. Every valid target says so itself rather than the panel
-     heading saying it for them — a heading is a screen away from the rows it
-     describes, and the fill answers "where" where the answer is needed.
-     Nothing else may wear it (the near-miss badge used to; see .badge.near-miss). */
-  /* On a year row it is the year cell that turns, not the whole row: the row
-     is mostly the track sitting in it, and washing that in yellow buried the
-     card it was meant to be offering. A crate square has no such passenger,
-     so it fills. */
+  /* Yellow means one thing only: somewhere you can tap right now. Nothing
+     else may wear it. On a year row only the year cell turns — washing the
+     whole row buried the card it was offering; a crate square has no such
+     passenger, so it fills. */
   .year-row.tap-target .year-num-cell{ background:#ffdc7a; color:#7a4500; }
-  /* A beacon's band keeps its green over the tap-yellow. The band is an
-     answer, bought with a coin and good for the decade; the yellow only says
-     "you may tap here", which most of the column is saying at the same time.
-     The band's own rows would otherwise be the only ones you couldn't read it
-     on — precisely the years it is pointing at. */
+  /* A beacon's band keeps its green over the tap-yellow — the band is a paid
+     answer; the yellow only says "you may tap here", which most of the
+     column says at the same time. */
   .year-row.homing-band.tap-target .year-num-cell{ background:#c2e8b6; color:#1a6b0a; }
-  /* Holding a track, its own empty square is the target: only the mark
-     turns, in the same full yellow the year cells wear, so "put it back
-     here" and "place it here" are the one colour. A slot that still holds a
-     card has no mark to turn, so the card fills — that is a skill's target,
-     not a homecoming. */
+  /* A held track's own empty square: only the mark turns yellow ("put it
+     back here"). A slot still holding a card fills instead — that is a
+     skill's target, not a homecoming. */
   .crate-slot.tap-target:not(.empty){
     background:#ffe9a8;
     border-color:#cc9900;
@@ -540,8 +516,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .year-row.correct .reveal-text{ color:#1a6b0a; font-weight:bold; }
-  .year-row.incorrect .reveal-text{ color:#8a1f11; }
   .year-row.locked .reveal-text{ color:#14520a; font-weight:bold; cursor: help; }
 
   .footer{
@@ -694,11 +668,8 @@
     font-style: italic;
     color:#999999;
   }
-  /* Stands alone in the table for a free, non-branching skill (Swap) — no
-     cost row, no outcome rows, so the one thing worth saying gets a line of
-     its own instead of an empty table. */
-  /* Stands in for the whole effects table on a single-use card, so it lines
-     up where the numbers it replaces would have been. */
+  /* Stands in for the whole effects table on a free single-use card (Swap),
+     lined up where the numbers it replaces would have been. */
   .fx-note{ font-size: 10px; color:#555555; text-align: right; }
   /* Replaces the card body once a skill leaves a persistent note (Gut Check). */
   .skill-note{
@@ -769,15 +740,10 @@
     50%{ outline: 2px solid #000080; outline-offset: -2px; }
   }
 
-  /* A moved card's transient stand-in (see cardGhost) — plays once from the
-     spot it left to the spot it landed in, then removes itself. Used for both
-     an incoming placement and a bumped track's return trip (see
-     playCardGhosts). --ghost-dx/dy are set per-instance in JS; the base
-     left/top/width/height are the FINAL position, and the keyframe's `from`
-     offsets back to the old one, so the motion is a straight FLIP regardless
-     of direction or distance. The fade covers for the clone losing its
-     ancestor-scoped shape (crate square vs. timeline row) once it's detached
-     and appended to <body>. */
+  /* A moved card's transient stand-in (see cardGhost/playCardGhosts). FLIP:
+     the base position is the FINAL spot and the keyframe's `from` offsets
+     back by --ghost-dx/dy (set in JS). The fade covers the clone losing its
+     ancestor-scoped shape once appended to <body>. */
   @keyframes card-slide{
     from{ transform: translate(var(--ghost-dx), var(--ghost-dy)); opacity: 1; }
     to{ transform: translate(0, 0); opacity: 0; }
@@ -818,11 +784,9 @@
     .mobile-only{ display:inline; }
 
     /* ---- Type scale ----
-       Desktop sizes are read at arm's length on a big screen; the same numbers
-       on a phone sit under every legibility floor there is. Body copy goes up
-       about 2px and nothing a player reads is left under 12px. The monospace
-       accents (badges, counters) climb less, which is what keeps the layout
-       looking like itself rather than a blown-up copy. */
+       Body copy goes up ~2px (nothing a player reads under 12px); the
+       monospace accents climb less, which keeps the layout looking like
+       itself rather than a blown-up copy. */
     .how-to{ font-size: 13px; }
     .how-to li{ line-height: 1.5; margin-bottom: 5px; }
     .how-to > summary{ font-size: 12px; }
@@ -846,14 +810,9 @@
     .badge{ font-size: 11px; }
     .badge-inline{ font-size: 10px; }
     /* ---- The note is prose on a phone, never a field ----
-       renderCard emits the field and the prose together and lets the layout
-       choose between them; on mobile the prose wins in both places a card is
-       drawn. An input this size is mostly chrome, and typing into a two-line
-       box with the keyboard over it is the worst way to write a note — the
-       editor sheet does that, opened by tapping the prose once the track is
-       in hand (the .card-note-text handler in renderCard, which already
-       required arming). It also retires the iOS zoom trap by construction:
-       no inline field is ever focused now, and the editor's input is 16px. */
+       renderCard emits both and the layout picks; writing happens in the
+       editor sheet (tap the prose once the track is armed). No inline field
+       is ever focused, which retires the iOS zoom trap by construction. */
     .note-input{ display:none; }
     .card-note{
       display:flex;
@@ -962,12 +921,9 @@
     .how-to > summary{ padding: 6px 0; }
 
     /* ---- Skill deck ----
-       Two columns (SKILL_COLUMNS_MOBILE), and they stay real columns: a grid
-       aligns rows across the deck, so every card was padded out to the height
-       of whatever sat beside it. Flex columns each pack their own.
-       The blurb comes off the card entirely — six of them is most of a phone
-       screen, and the message line under the deck was sitting empty. Picking
-       a skill up puts its blurb there (see setSkillMsg's sticky). */
+       Two flex columns (SKILL_COLUMNS_MOBILE), each packing its own heights.
+       The blurb comes off the card — six of them is most of a phone screen;
+       picking a skill up puts its blurb on the message line instead. */
     .skill-desc{ display:none; }
     .skill-msg{
       font-size: 12px;
@@ -1048,11 +1004,8 @@
        content's min-content width (~800px of crate cards), which would keep
        #crateArea's own overflow-x from ever engaging. */
     .cols td{ display:block; width:100%; min-width:0; padding:0; }
-    /* Crate first, then the board. The deck-to-board distance is what the
-       strip keeps short: a two-column crate put 443px between them, and
-       moving the crate below the board fixed that but left every skill that
-       acts on an unplaced track stranded a screen the other way. A compact
-       strip is the only arrangement where the deck is close to both. */
+    /* Crate first, then the board — a compact strip is the only arrangement
+       where the skill deck sits close to both (see design.md). */
     .timeline-cell{ order:2; }
     .crate-cell{ order:1; margin-bottom:10px; }
 
@@ -1061,12 +1014,10 @@
        scrolled inside a page that also scrolled. */
     #timelineArea{ max-height:none; overflow:visible; }
 
-    /* Crate: vertical list -> horizontal strip of square cards. Snap is
-       mandatory (a card always lands square in view, never half-scrolled),
-       the strip contains its own overscroll so a swipe past the last card
-       can't turn into the browser's back gesture, and the cards are sized so
-       a third one always peeks in — the peek is the affordance that says
-       there is more, in place of a scrollbar nobody can grab on a phone. */
+    /* Crate: vertical list -> horizontal strip of square cards. Snap keeps a
+       card square in view, contained overscroll keeps a swipe past the end
+       from becoming the browser's back gesture, and a third card always
+       peeks in — the peek says "there is more" in place of a scrollbar. */
     #crateArea{
       display:flex;
       flex-direction:row;
@@ -1171,20 +1122,16 @@
     /* The grip means "draggable", which nothing here is — and a locked track
        never sits in the crate, so no lock icon to preserve either. */
     .crate-slot .card-row .grip{ display:none; }
-    /* Off the board and onto the toast, on the timeline as well as in the
-       crate: it's a sentence of prose read once, and printed under a year row
-       it pushed the row to twice the height of its neighbours for something
-       you'd already read. Arming the track brings it back (paintTriviaToast). */
+    /* Trivia moves off the card and onto the toast — printed under a year
+       row it doubled the row's height. Arming the track brings it back
+       (paintTriviaToast). */
     .card-trivia{ display:none; }
     .crate-slot .reveal-text{ grid-area:reveal; justify-self:stretch; font-size:11px; text-align:center; }
     /* Square at whatever size the card's current state affords it. */
     .crate-slot .play-btn{ grid-area:play; width:var(--play-size); height:var(--play-size); }
-    /* Wrapped, not stacked one per row — a swap mark or the trivia "T" is a
-       fifth the width of a date range, and stacking every badge one per row
-       regardless left most of the column empty beside the narrow ones.
-       fitBadges() treats wrap the same as a column (sizes against the
-       widest, not the total), so that bound still holds. Stretched so the
-       rule on the button edge spans the whole cut. */
+    /* Wrapped, not one per row — narrow badges left most of the column
+       empty. fitBadges() treats wrap like a column (sizes against the
+       widest), so its bound still holds. */
     .crate-slot .card-badges{
       grid-area:badges;
       justify-self:stretch;
@@ -1199,12 +1146,9 @@
       border-right:1px dotted #d0d0d0;
     }
     .crate-slot .badge{ flex:0 0 auto; font-size:10px; padding:1px 3px; }
-    /* The note as prose, not a field — an input at this size is mostly chrome.
-       Two boxes, not one: -webkit-line-clamp needs display:-webkit-box on
-       whatever it clamps (.card-note-text, sized to its own line count), and
-       that box model doesn't centre the text it clamps. A plain flex centres
-       the outer box instead, so the clamped span grows from the middle in
-       both directions as a note gets longer. */
+    /* Two boxes, not one: -webkit-line-clamp needs display:-webkit-box on
+       what it clamps (.card-note-text), and that box model doesn't centre —
+       the outer flex centres the clamped span instead. */
     .crate-slot .card-note{
       justify-content:center;
       grid-area:note;
@@ -1393,13 +1337,10 @@
       // same, why homing escalates) lives in design.md.
       spotcheck: { cost: 1, reward: 2 },   // reward when the year is exact
       highlow:   { cost: 1, reward: 1 },   // reward when the answer is spot on
-      reveal:    { cost: 2 },
-      worst:     { cost: 3 },
       swap:      { charges: 3 },           // free; its own per-decade pool, see swapsLeft
       homing:    { costStart: 1, costStep: 1, span: 3 },   // span = years the green band covers
       // costStart/costStep: free first use, +costStep each use after, reset
       // per batch. See skillCost() and skillUses.
-      idreveal:   { costStart: 0, costStep: 1 },
       yeartrivia: { costStart: 0, costStep: 1 },
       // gutcheck's cost/thresholds live in gutcheck.js, not here.
     },
@@ -1450,7 +1391,7 @@
   // 'playing' | 'cleared' (batch done, waiting to move on) | 'over' | 'won'
   let runState = 'playing';
   // Per-use price counters for the escalating skills; reset every batch.
-  let skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
+  let skillUses = { yeartrivia: 0, homing: 0 };
   // Swap's charge pool, reset every batch — see startBatch().
   let swapsLeft = CONFIG.skills.swap.charges;
 
@@ -1489,7 +1430,6 @@
   function placedCount(){ return years.filter(y => slots['year' + y]).length; }
   function placedYears(){ return years.filter(y => slots['year' + y]); }
   function yearOfSlot(slotId){ return parseInt(slotId.slice(4), 10); }
-  function pickOne(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
   function coinWord(n){ return n + ' coin' + (n === 1 ? '' : 's'); }
   // Badge text only; titles always spell the year out in full.
   function shortYear(y){ return String(y).slice(-2); }
@@ -1542,7 +1482,6 @@
     card.ready = false;
     card.previewUrl = null;
     card.audio = null;
-    card.idRevealed = false;  // the stand-in's identity hasn't been seen
     // homing/triviaRevealed/nearMisses/directions survive on purpose: they
     // describe the year, which the stand-in shares.
     loadPreviewFor(card);
@@ -1550,29 +1489,10 @@
 
   // available() gates picking the card up; `target` decides which surfaces
   // accept it; a run() returning { ok:false } aborts without charging.
-  // `short` is the card's one-liner (hover gives `description`). `effects` is
-  // the outcome table, only for cards whose outcome branches:
+  // `short` is the card's one-liner. `effects` is the outcome table, only for
+  // cards whose outcome branches:
   //     { when: 'right year', result: 'LOCK', coins: 2 }
   const SKILLS = [
-    {
-      id: 'worst',
-      name: 'Reveal the worst offender',
-      cost: CONFIG.skills.worst.cost,
-      enabled: false,   // hidden by product decision — logic kept intact for easy re-enabling
-      target: 'timeline',
-      use: 'the timeline',
-      requirement: 'every song placed',
-      description: 'Temporarily highlights the track sitting furthest from its real year. If several are equally far off, one is picked at random.',
-      short: 'Flags the track sitting furthest from its year.',
-      available: () => placedCount() === NUM_CARDS,
-      run(){
-        const entries = placedYears().map(y => ({ y, off: Math.abs(cardById(slots['year' + y]).song.year - y) }));
-        const worst = Math.max(...entries.map(e => e.off));
-        if (worst === 0) return { ok: false, message: 'Every track is already on its exact year — nothing to reveal.' };
-        flash([pickOne(entries.filter(e => e.off === worst)).y], 'FURTHEST OFF', 'warn');
-        return { ok: true };
-      }
-    },
     {
       id: 'highlow',
       name: 'Are you Earlier or Later?',
@@ -1580,7 +1500,6 @@
       target: 'song',
       use: 'a placed song',
       requirement: 'a song on the timeline',
-      description: 'Tests a placed track and leaves a badge saying whether its real year is before or after the year you tested it on. The badge names that year and stays for the decade, so two of them close in on the answer from both sides. If the track is already spot on it locks instead, and ' + coinWord(CONFIG.skills.highlow.reward) + ' back.',
       short: 'Leaves a {badge:direction} saying which way a track needs to move.',
       // No row for being wrong: the badge is what the card is for, and the
       // blurb above already promises it. The table is left saying the one
@@ -1619,7 +1538,6 @@
       target: 'song',
       use: 'a placed song',
       requirement: 'a song on the timeline',
-      description: 'Tests one placed track against its real year. Exactly right and you get ' + coinWord(CONFIG.skills.spotcheck.reward) + ' back and the track locks for the rest of the decade; wrong and the coin is all it cost you.',
       short: 'Tests one placed track against its year.',
       effects: [
         { when: 'right year', result: 'LOCK', coins: CONFIG.skills.spotcheck.reward,
@@ -1644,35 +1562,12 @@
       }
     },
     {
-      id: 'reveal',
-      name: 'Reveal 1 right placement',
-      cost: CONFIG.skills.reveal.cost,
-      enabled: false,   // hidden by product decision — logic kept intact for easy re-enabling
-      target: 'timeline',
-      use: 'the timeline',
-      requirement: 'every song placed',
-      description: 'Randomly finds one track that is already on the correct year and locks it for the rest of the decade.',
-      short: 'Finds and locks one already-correct placement.',
-      available: () => placedCount() === NUM_CARDS,
-      run(){
-        const correct = placedYears().filter(y => cardById(slots['year' + y]).song.year === y);
-        if (!correct.length) return { ok: false, message: 'Nothing is in the right place yet.' };
-        const fresh = correct.filter(y => !confirmed.has(slots['year' + y]));
-        if (!fresh.length) return { ok: false, message: 'You have already found every correct placement.' };
-        const y = pickOne(fresh);
-        confirmed.add(slots['year' + y]);
-        flash([y], 'CORRECT', 'good');
-        return { ok: true };
-      }
-    },
-    {
       id: 'homing',
       name: 'Homing beacon',
       cost: () => CONFIG.skills.homing.costStart + skillUses.homing * CONFIG.skills.homing.costStep,
       target: 'card',
       use: 'any track',
       requirement: 'a track without a beacon',
-      description: 'Attaches to a track for the rest of the decade and leaves a badge naming a green band ' + HOMING_SPAN + ' years wide on the timeline that the track’s real year sits somewhere inside — shown on attach, and again every time you drag it. Price climbs ' + CONFIG.skills.homing.costStep + ' coin each use, and resets when the decade clears.',
       short: 'Leaves a {badge:homing} naming a ' + HOMING_SPAN + '-year band holding the answer.',
       available: () => cards.some(c => !c.homing),
       run(slotId){
@@ -1692,8 +1587,6 @@
       target: 'card',
       use: 'any track',
       requirement: 'a track not yet swapped',
-      description: 'Trades a track you cannot place for a different one from the same year, so nothing you have already worked out is invalidated. One swap per track, and the scribbled note is cleared with it. Free, and each of the '
-        + CONFIG.skills.swap.charges + ' copies dealt out at the start of the decade is good for one swap.',
       short: 'Trades a track for another from its year.',
       // Not gated on stand-in stock — the player can't see or reason about it;
       // run() refuses with an explanation and spends no charge.
@@ -1708,25 +1601,6 @@
         return { ok: true };
       }
     },
-    {
-      id: 'idreveal',
-      name: 'Get Track title and performer',
-      cost: () => CONFIG.skills.idreveal.costStart + skillUses.idreveal * CONFIG.skills.idreveal.costStep,
-      enabled: false,   // hidden by product decision — logic kept intact for easy re-enabling
-      target: 'card',
-      use: 'any track',
-      requirement: 'a track not yet named',
-      description: 'Reveals a track’s real title and artist — not its year, and it does not lock. Price climbs ' + CONFIG.skills.idreveal.costStep + ' coin each use, and resets when the decade clears.',
-      short: 'Names the track — not its year.',
-      available: () => cards.some(c => !c.idRevealed),
-      run(slotId){
-        const card = cardById(slots[slotId]);
-        if (card.idRevealed) return { ok: false, message: 'You already know this track’s title and artist.' };
-        card.idRevealed = true;
-        skillUses.idreveal++;
-        return { ok: true, message: 'Revealed: ' + card.song.title + ' — ' + card.song.artist + '.' };
-      }
-    },
     GUT_CHECK_SKILL,     // defined in gutcheck.js
     {
       id: 'yeartrivia',
@@ -1735,7 +1609,6 @@
       target: 'card',
       use: 'any track',
       requirement: 'a track with unread trivia',
-      description: 'Reveals a fact about the track’s real year — not the year itself. Price climbs ' + CONFIG.skills.yeartrivia.costStep + ' coin each use, and resets when the decade clears.',
       short: 'Get a trivia {badge:trivia-badge} — a fact from the track’s year.',
       available: () => cards.some(c => !c.triviaRevealed && triviaForYear(c.song.year)),
       run(slotId){
@@ -1754,8 +1627,7 @@
     }
   ];
 
-  // Which deck column each card renders in — a hand-picked grouping. A
-  // disabled skill or an id with no entry here just doesn't render.
+  // Which deck column each card renders in — a hand-picked grouping.
   const SKILL_COLUMNS = [
     ['highlow', 'gutcheck'],
     ['homing', 'yeartrivia', 'spotcheck'],
@@ -1788,10 +1660,6 @@
   const COIN = '<svg class="coin-icon" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">'
     + '<path d="M5 8.6 C1.2 6.0 0.6 4.0 1.9 2.5 3.1 1.2 4.5 1.8 5 2.8 5.5 1.8 6.9 1.2 8.1 2.5 9.4 4.0 8.8 6.0 5 8.6 Z" fill="#b3265b"/></svg>';
 
-  function costTitle(skill, cost){
-    return cost === 0 ? 'Free to use' : 'Costs ' + coinWord(cost);
-  }
-
   // A solid arrow — a thin "↑" character all but disappeared at 10px. Rides
   // beside the coin on a skill's cost row (see renderEffects), the same way
   // LOCKED_ICON rides an outcome row — currentColor follows the coin's own
@@ -1815,7 +1683,6 @@
   function badgeChip(variant, label){
     return `<span class="badge ${variant} badge-inline">${label}</span>`;
   }
-  const INFO_CHIP = badgeChip('info', 'INFO');
 
   // A skill's one-line blurb is authored as plain text and escaped on the way
   // out, so a chip can't just be written into one. {badge:variant} is the
@@ -1832,61 +1699,37 @@
       .replace(/\{badge:([a-z-]+)\}/g, (_, variant) => badgeChip(variant, 'BADGE'));
   }
 
-  // One row of the effects grid: a condition, its coin delta, and an
-  // optional icon riding beside the coin (LOCK on an outcome row, the
-  // escalates arrow on the cost row — see renderEffects). Every other
-  // outcome word ("wrong", "not this year") reads clearly enough from `when`
-  // and the sign of the delta alone, so nothing but those is ever spelled
-  // out here. `coinText`, when given, replaces the amount entirely — a badge
-  // outcome pays nothing but isn't nothing, and a literal "0" read as
-  // "nothing happens" rather than "something happens, just not coins". Such a
-  // cell carries its own colour (it is a chip, not a number), so it keeps the
-  // zero tone underneath and simply has no text for it to tint.
-  // Rows carry a bare number. The heart is stated once per card, on the
-  // price (see renderEffects) — it heads the column the way a currency
-  // symbol heads a price list, and the rows under it inherit the unit. One
-  // per row was five hearts on a Gut Check card, which read as decoration
-  // rather than as a unit.
+  // One row of the effects grid: a condition, its coin text, and an optional
+  // icon riding beside the coin (LOCK on an outcome row, the escalates arrow
+  // on the cost row — see renderEffects). `coins` only picks the tone;
+  // `coinText` is the printed amount, heart included or not — the heart is
+  // stated once per card, on the price, the way a currency symbol heads a
+  // price list.
   function fxRow(when, coins, icon, hint, coinText){
-    const tag = coinText !== undefined
-      ? coinText
-      : (coins > 0 ? '+' : coins < 0 ? '−' : '') + Math.abs(coins);
     const tone = coins > 0 ? ' pos' : coins < 0 ? ' neg' : ' zero';
     return `<div class="fx"${hint ? ` title="${escapeAttr(hint)}"` : ''}>`
       + `<span class="fx-when">${escapeAttr(when)}</span>`
-      + `<span class="fx-coin${tone}">${icon || ''}${tag}</span>`
+      + `<span class="fx-coin${tone}">${icon || ''}${coinText}</span>`
       + `</div>`;
   }
 
-  // A skill's full effects grid: what it costs up front (replacing the old
-  // top-corner cost badge, so the price sits with the rest of the
-  // arithmetic instead of off on its own — free skills skip the row rather
-  // than show "0"), the escalates arrow riding the cost row it actually
-  // describes instead of sitting unexplained in the corner (the card's own
-  // description already says the price climbs), then how each outcome pays
-  // or doesn't, plus an optional caption over the coin column. A single-use
-  // skill has no cost and no branching outcomes, so it would otherwise be an
-  // empty table — the one thing worth saying stands alone instead.
+  // A skill's full effects grid: the cost row first, then how each outcome
+  // pays or doesn't, plus an optional caption over the coin column. A
+  // single-use skill (Swap) would be an empty table, so its one note stands
+  // alone instead.
   function renderEffects(skill){
     const cost = skillCost(skill);
-    // Free is only worth hiding when a skill has no cost mechanic at all
-    // (Swap, flat 0). An escalating skill can land on 0 too — trivia's first
-    // use each decade — and that's exactly when the row matters most: it's
-    // what carries the escalates icon telling you the next one won't be free.
-    // The one heart on the card, on the row every paying skill has. A free
-    // single-use card (Swap) has no cost row and no numbers under it, so it
-    // needs no unit either.
+    // An escalating skill keeps its cost row even at 0 (trivia's first use
+    // each decade) — that row carries the escalates icon telling you the
+    // next one won't be free. Only a flat-0 skill (Swap) hides it.
     const costTag = (cost === 0 ? '0' : '−' + cost) + ' ' + COIN;
     const costRow = (cost > 0 || escalates(skill))
       ? fxRow('Cost', -cost, escalates(skill) ? ESCALATES_ICON : '',
-              costTitle(skill, cost), costTag)
+              cost === 0 ? 'Free to use' : 'Costs ' + coinWord(cost), costTag)
       : '';
     // Every row fills every cell, zero included — blank cells broke the column scan.
     const rows = (skill.effects || [])
       .map(fx => {
-        if (fx.result === 'INFO BADGE') {
-          return fxRow(fx.when, 0, '', fx.hint, INFO_CHIP);
-        }
         const coins = fx.coins || 0;
         const coinDisplay = (coins > 0 ? '+' : coins < 0 ? '−' : '') + Math.abs(coins) + ' ' + COIN;
         return fxRow(fx.when, coins, fx.result === 'LOCK' ? LOCKED_ICON : '', fx.hint, coinDisplay);
@@ -1910,14 +1753,12 @@
     if (runState !== 'playing'){
       return runState === 'cleared' ? 'The decade is cleared.' : 'The run is over.';
     }
-    if (skill.enabled === false) return skill.name + ' is not in this deck.';
     if (!skill.available()) return 'Needs ' + skill.requirement + '.';
     if (coins < skillCost(skill)) return 'Not enough coins for ' + skill.name + '.';
     return null;
   }
 
   function skillState(skill){
-    if (skill.enabled === false) return 'locked';
     if (runState !== 'playing') return 'locked';
     if (!skill.available()) return 'locked';
     if (coins < skillCost(skill)) return 'unaffordable';
@@ -2189,7 +2030,6 @@
       // The one crate slot this track occupies on mobile — it starts and
       // returns there. Survives a Swap. Desktop ignores it.
       crateSlot: 'crate' + i,
-      idRevealed: false,     // true once "Get Track title and performer" has been used on this card
       triviaRevealed: false  // true once "Get trivia from year" has been used on this card
     }));
 
@@ -2202,7 +2042,7 @@
     cards.forEach(c => slots[c.crateSlot] = c.id);
 
     confirmed = new Set();
-    skillUses = { idreveal: 0, yeartrivia: 0, homing: 0 };
+    skillUses = { yeartrivia: 0, homing: 0 };
     swapsLeft = CONFIG.skills.swap.charges;
     resetGutCheck();     // gutcheck.js
     dragging = null;
@@ -2287,12 +2127,10 @@
           return;
         }
         setArmed({ kind: 'skill', id: skill.id, uid });
-        // On a phone the card no longer prints its blurb (the deck has no
-        // room for six of them); picking the skill up is what says what it
-        // does, and it stays said until the skill is used or put down.
-        // Desktop keeps the short form — its cards still carry the blurb.
-        // Name first there, since two card names are questions and a trailing
-        // name collided its "?" with the full stop.
+        // Mobile cards carry no blurb, so picking the skill up says it, and
+        // it stays said until the skill is used or put down. Desktop leads
+        // with the name (two names are questions; a trailing "?" collided
+        // with the full stop).
         setSkillMsg(isMobile() ? skill.short + ' Tap ' + skill.use + '.'
                                : skill.name + ' — tap ' + skill.use + '.',
                     false, false);
@@ -2324,7 +2162,7 @@
     columns.forEach((ids, colIndex) => {
       ids.forEach(id => {
         const skill = skillById(id);
-        if (!skill || skill.enabled === false) return;   // hidden — see the skill's own definition
+        if (!skill) return;
 
         // Swap deals `charges` identical copies, each good for one swap; the
         // last `charges - swapsLeft` render spent, and spent copies sort last.
@@ -2477,16 +2315,13 @@
     // clips in the narrow row, hence the title.
     const withYear = `${card.song.title} — ${card.song.artist} · ${card.song.year}`;
     const nameOnly = `${card.song.title} — ${card.song.artist}`;
-    // A locked track's row already labels the year; unlocked reveals keep it.
-    const nameText = locked ? nameOnly : revealAll ? withYear : card.idRevealed ? nameOnly : null;
+    // A locked track's row already labels the year; the end-of-run reveal keeps it.
+    const nameText = locked ? nameOnly : revealAll ? withYear : null;
     const noteOrReveal = nameText !== null
       ? `<span class="reveal-text" title="${escapeAttr(nameText)}">${escapeAttr(nameText)}</span>`
       : `<input class="note-input" type="text" placeholder="scribble a note..." value="${escapeAttr(card.note)}" />`
         // The same note twice, field and prose — which shows is the layout's
-        // decision (see .card-note), not renderCard sampling isMobile(). The
-        // inner span is what actually clamps (see .card-note-text) — .card-note
-        // itself just centers that span within the fixed height it's given,
-        // however many lines the span ends up being.
+        // decision (see .card-note), not renderCard sampling isMobile().
         + `<div class="card-note${card.note ? '' : ' empty'}"><span class="card-note-text">${escapeAttr(card.note || 'add a note')}</span></div>`;
 
     // A locked track clears its badges entirely; the grip carries the lock icon.
@@ -2513,11 +2348,8 @@
       ? `<div class="card-trivia">${escapeAttr(triviaForYear(card.song.year))}</div>`
       : '';
 
-    // The grip implies draggable; locked tracks show it grayed out since they can't be dragged.
-    const gripOrLock = `<span class="grip">::</span>`;
-
     div.innerHTML = `
-      ${gripOrLock}
+      <span class="grip">::</span>
       <button class="play-btn" style="--card-color:${card.color}" title="Play sample" ${card.ready ? '' : 'disabled'}>${btnLabel}</button>
       ${noteOrReveal}
       <span class="card-badges">${badges}</span>
@@ -2526,10 +2358,8 @@
 
     const playBtn = div.querySelector('.play-btn');
     const play = e => {
-      // A held skill owns this tap (on a mobile crate card the button is most
-      // of what there is to aim at). A held track doesn't: moving between
-      // samples is the board's most frequent act, so tapping any button plays
-      // and picks up that track, whatever was held before.
+      // A held skill owns this tap; a held track doesn't — tapping any play
+      // button plays and picks up that track, whatever was held before.
       if (armed && armed.kind === 'skill') return;
       e.stopPropagation();
       togglePlay(cardId);
@@ -2544,7 +2374,7 @@
       if (tapFired) return;
       play(e);
     });
-    if (!revealAll && !locked && !card.idRevealed){  // a named card has no note input to wire up
+    if (!revealAll && !locked){  // a named card has no note input to wire up
       const note = div.querySelector('.note-input');
       note.addEventListener('input', e => updateNote(cardId, e.target.value));
       // Taps/clicks into the field are the field's — except while something
@@ -2557,10 +2387,8 @@
       });
     }
 
-    // The hit target is the text itself (.card-note-text, sized to its own
-    // content), not the stretched .card-note box around it — .card-note
-    // fills the whole bottom half so its border-top lands on the halfway
-    // line, and that padding was never meant to be part of the tap target.
+    // The hit target is the text itself (.card-note-text), not the stretched
+    // .card-note box, whose padding only exists to place the halfway rule.
     const noteEl = div.querySelector('.card-note-text');
     if (noteEl){
       onTap(noteEl, e => {
@@ -2640,16 +2468,11 @@
     bumpPreviewSlot = bumpTo;
   }
 
-  // A card that just moved — placed, or bumped back to the crate — otherwise
-  // just vanishes from its old spot and reappears in the new one. This plays
-  // a transient visual copy sliding between the two, on top of the real
-  // (already-correct) card render() just placed, so gameplay state is never
-  // delayed by it. Two-phase: call before the state change + render() to
-  // snapshot; call the returned `.hide()` right after render(), before
-  // anything paints — this must happen for every ghost in a placement right
-  // away, even one that won't play until later (see playCardGhosts), or its
-  // landing spot would flash visible in the meantime. Call `.start()`
-  // whenever it's that ghost's actual turn to slide.
+  // Plays a transient copy of a moved card sliding old spot → new spot, on
+  // top of the real (already-correct) render. Two-phase: call before render()
+  // to snapshot; call the returned `.hide()` right after render() for EVERY
+  // ghost at once (even one that plays later — see playCardGhosts), or its
+  // landing spot flashes visible; call `.start()` on that ghost's turn.
   function cardGhost(cardId){
     const oldEl = document.querySelector(`.card-row[data-card-id="${cardId}"]`);
     if (!oldEl) return null;
@@ -2662,15 +2485,11 @@
       if (!newEl) return;
       const slotEl = isMobile() ? newEl.closest('.crate-slot') : null;
       if (slotEl){
-        // The strip needs to actually carry the player's eye there — the same
-        // scroll showCrateHome plays when a track is picked up, not an instant
-        // jump. But its finishing position has to be known now, not once the
-        // animation settles, or the ghost would be aiming at a moving target.
-        // So: jump there instantly to measure the true landing rect, jump back
-        // before anything paints, then (in start()) play the real scroll from
-        // where the strip actually was. getBoundingClientRect() forces layout
-        // but not paint, and nothing here yields to the event loop in between,
-        // so the mid-measurement jump is never on screen.
+        // The landing rect must be measured at the strip's FINAL scroll
+        // position (start() plays a smooth scroll there later, and the ghost
+        // can't aim at a moving target): jump there, measure, jump back.
+        // getBoundingClientRect() forces layout but not paint and nothing
+        // yields in between, so the jump is never on screen.
         const area = document.getElementById('crateArea');
         const startLeft = area.scrollLeft;
         scrollCrateToSlot(slotEl, 'instant');
@@ -2750,14 +2569,11 @@
     return displaced || null;
   }
 
-  // Mobile: a track has one home slot and every crate tap sends it there —
-  // nothing to aim, nothing to displace. Desktop: undifferentiated storage —
-  // crate-to-crate swaps, a track off the timeline takes the first free slot
-  // (which always exists: it just vacated a year).
-  // Returns the bumped occupant's id in the one branch that actually
-  // displaces someone (a timeline track landing on a full crate slot); null
-  // otherwise — the crate-to-crate swap trades two cards that never left the
-  // crate, nothing to animate.
+  // Mobile: every crate tap sends the track to its own home slot. Desktop:
+  // undifferentiated storage — crate-to-crate swaps, a track off the timeline
+  // takes the first free slot (which always exists: it just vacated a year).
+  // Returns the bumped occupant's id only in the branch that displaces
+  // someone visibly (a timeline track landing on a full crate slot).
   function placeInCrate(draggedId, sourceSlot, slotId){
     if (isMobile()){
       slots[sourceSlot] = null;
@@ -2773,6 +2589,23 @@
     slots[sourceSlot] = occupant || null;
     slots[slotId] = draggedId;
     return null;
+  }
+
+  // The commit both input modes share: move the track, then play the move's
+  // ghost(s) over the re-render. `cleanup` is each mode's own teardown
+  // (disarm / clear the drop preview), run after the ghosts snapshot the old
+  // DOM but before render() replaces it.
+  function commitMove(draggedId, sourceSlot, slotId, cleanup){
+    const bumped = slotId.startsWith('crate')
+      ? placeInCrate(draggedId, sourceSlot, slotId)
+      : dropOnYear(draggedId, sourceSlot, slotId);
+    const placeG = cardGhost(draggedId);
+    const bumpG = bumped ? cardGhost(bumped) : null;
+    cleanup();
+    render();
+    placeG?.hide();
+    bumpG?.hide();
+    playCardGhosts(placeG, bumpG);
   }
 
   // ---- Tap mode -------------------------------------------------------------
@@ -2795,15 +2628,10 @@
   let pressedEls = [];      // pressable ancestors of the touch in progress, .pressed applied
   let pressTimer = null;    // pending preview, still cancellable — see press()
 
-  // The preview waits before it paints. Painting on contact meant every
-  // scroll that happened to start on a card flashed an outline on and off
-  // within a frame or two of the finger moving — the board is a column of
-  // tappable things, so most scrolls start on one. UIScrollView delays its
-  // highlight for exactly this reason (delaysContentTouches): long enough
-  // that a pan never paints one, short enough that a press still feels
-  // answered. A quick tap lifts before the delay and skips the preview
-  // entirely — the render that follows paints .armed, which is the same
-  // stroke, so nothing is lost.
+  // The press preview waits before painting, or every scroll that starts on
+  // a card flashes an outline — same reason UIScrollView delays its highlight
+  // (delaysContentTouches; see design.md). A quick tap lifts before the delay
+  // and paints .armed instead, the same stroke, so nothing is lost.
   const PRESS_DELAY_MS = 120;
 
   function press(target){
@@ -2845,29 +2673,12 @@
   document.addEventListener('pointerup', unpress, true);
   document.addEventListener('pointercancel', unpress, true);
 
-  // touch-action:manipulation (see the stylesheet) is supposed to cover
-  // double-tap zoom everywhere, but in practice it still gets through —
-  // unpredictably, on ordinary elements with nothing special about them, not
-  // just the ones render() replaces. iOS's "smart zoom" (what a double tap
-  // actually does — frame the tapped element, not just scale the page) is
-  // apparently still reachable around touch-action here and there; nothing
-  // found pins down exactly when. touchend's preventDefault is the old
-  // pre-touch-action fix for double-tap zoom, so it goes back to that as a
-  // blanket net, page-wide rather than scoped to a handful of selectors that
-  // evidently weren't the whole story.
-  //
-  // Safe to be this broad: pinch-zoom is never touched (touch-action still
-  // permits it, and this only ever runs on touchend, after any pinch has
-  // already happened on preceding touchmoves), so it stays as a manual
-  // escape hatch even in the one scenario a blanket double-tap block could
-  // otherwise cause harm — the page already zoomed in by some other route,
-  // with the double-tap-to-zoom-back-out gesture now caught by this same
-  // guard. That combination is what trapped a player in a zoomed-in page
-  // once before; leaving pinch alone means that never has to happen again.
-  // Windows wider than the gesture they are catching, deliberately. Missing
-  // one means the page zooms; over-catching costs a suppressed click, which
-  // nothing here reads (taps act on pointerup, and no field is focused by
-  // tap on mobile any more — the note editor opens and focuses from JS).
+  // Blanket double-tap-zoom guard: iOS's smart zoom still gets around
+  // touch-action:manipulation unpredictably, so this falls back to the old
+  // touchend-preventDefault fix, page-wide. Pinch-zoom is deliberately left
+  // alone as the escape hatch, and over-catching only costs a suppressed
+  // click, which nothing here reads (taps act on pointerup). Full story in
+  // design.md ("Double-tap zoom cannot be turned off by declaration").
   const DOUBLE_TAP_MS = 450;
   const DOUBLE_TAP_RADIUS = 60;   // a fingertip is ~45px; two taps drift
   let lastTapEnd = null;    // { x, y, time } of the last touchend, anywhere on the page
@@ -2904,22 +2715,15 @@
     const tookOne = !armed && !!next;
     armed = next;
     paintArmed();
-    // Nothing scrolls the page on a pick-up. It was there for the tall
-    // two-column crate, which pushed the years below the fold; with the
-    // strip they are already in view, and a page that jumps under the finger
-    // that just tapped costs more than the scroll it saves. The crate strip
-    // still slides to the held track's own square — that moves inside the
-    // strip, not under the player.
+    // Nothing scrolls the page on a pick-up — a page that jumps under the
+    // finger costs more than the scroll saves. Only the crate strip slides,
+    // to the held track's own square, inside itself.
     if (tookOne && isMobile() && next.kind === 'card') showCrateHome(next.id);
   }
 
-  // Scrolls the strip so `slotEl`'s square is in view, one square short of
-  // the edge — second from the left, not hard against it, so the square
-  // before it stays in frame and says the strip runs on rather than starts
-  // here. The leftmost square has nothing before it and simply leads. Shared
-  // by showCrateHome (a held track's own home square) and cardGhost (a
-  // moved track's landing square) — one piece of scroll math, so both read
-  // as the same motion.
+  // Scrolls the strip so `slotEl`'s square sits second from the left — the
+  // square before it stays in frame and says the strip runs on. Shared by
+  // showCrateHome and cardGhost so both read as the same motion.
   function scrollCrateToSlot(slotEl, behavior){
     const area = document.getElementById('crateArea');
     if (!area || !slotEl) return;
@@ -3132,16 +2936,7 @@
       if (!sourceSlot || sourceSlot === slotId){ setArmed(null); return; }
       // A locked row refuses; the held track stays in hand.
       if (isLocked(slotId)) return;
-      const bumped = slotId.startsWith('crate')
-        ? placeInCrate(armed.id, sourceSlot, slotId)
-        : dropOnYear(armed.id, sourceSlot, slotId);
-      const placeG = cardGhost(armed.id);
-      const bumpG = bumped ? cardGhost(bumped) : null;
-      setArmed(null);
-      render();
-      placeG?.hide();
-      bumpG?.hide();
-      playCardGhosts(placeG, bumpG);
+      commitMove(armed.id, sourceSlot, slotId, () => setArmed(null));
     });
 
     el.addEventListener('dragover', e => {
@@ -3186,16 +2981,7 @@
 
       const sourceSlot = slotOfCard(draggedId);
       if (!sourceSlot || sourceSlot === slotId || isLocked(slotId)){ clearDropPreview(); return; }
-      const bumped = slotId.startsWith('crate')
-        ? placeInCrate(draggedId, sourceSlot, slotId)
-        : dropOnYear(draggedId, sourceSlot, slotId);
-      const placeG = cardGhost(draggedId);
-      const bumpG = bumped ? cardGhost(bumped) : null;
-      clearDropPreview();
-      render();
-      placeG?.hide();
-      bumpG?.hide();
-      playCardGhosts(placeG, bumpG);
+      commitMove(draggedId, sourceSlot, slotId, clearDropPreview);
     });
   }
 
@@ -3294,9 +3080,7 @@
 
     let crateCount = 0;
     // Every slot, always: each track keeps one square of its own, so the gap
-    // a track left is where it goes back to — which is the whole answer to
-    // "where does putting it back put it". Collapsing the spent ones made
-    // that gap disappear and took the answer with it.
+    // a track left is visibly where it goes back to.
     const slotIds = Array.from({ length: NUM_CARDS }, (_, i) => 'crate' + i);
     slotIds.forEach(slotId => {
       const cardId = slots[slotId];

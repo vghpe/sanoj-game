@@ -25,11 +25,6 @@ let gutCheckUses = 0;
 function resetGutCheck(){ gutCheckUses = 0; }
 function gutCheckCost(){ return GUT_CHECK_COST_START + gutCheckUses * GUT_CHECK_COST_STEP; }
 
-// The main script's coinWord() would be the natural thing to build the
-// description with, but this file is evaluated before it exists — description
-// is a plain string, read at load time — so it needs its own local copy.
-function gutCoinWord(n){ return n + ' coin' + (n === 1 ? '' : 's'); }
-
 // A near miss is recorded as the year it was *tested against*, not just "close",
 // so the marker stays true after the track is dragged somewhere else — and two
 // markers on one track pin its real year between them. Checking the same track
@@ -74,10 +69,6 @@ const GUT_CHECK_SKILL = {
     { when: 'further out', result: 'MISS', coins: -GUT_CHECK_MISS_PENALTY,
       hint: 'More than a year out. You learn nothing about it and it costs you.' },
   ],
-  description: 'Tests every track you have placed, all at once. Each one sitting on its exact year locks and pays '
-    + gutCoinWord(GUT_CHECK_EXACT_REWARD) + ' back; each one a single year out is badged with the year it was tested '
-    + 'against and pays nothing; everything further out costs you ' + gutCoinWord(GUT_CHECK_MISS_PENALTY)
-    + '. Price climbs ' + GUT_CHECK_COST_STEP + ' coin each check, and resets when the decade clears.',
   available: () => placedCount() > 0,
   run(){
     let exact = 0, near = 0, miss = 0;
